@@ -1,0 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
+@import "tailwindcss";
+@import "tailwindcss" source("../src/css/");
+
+@theme {
+    --bg-red-600: oklab(55.910000000000004% 0.20543 0.09128);
+    --color-red-600: oklab(55.910000000000004% 0.20543 0.09128);
+    --text-red-600: oklab(55.910000000000004% 0.20543 0.09128);
+    --border-red-600: oklab(55.910000000000004% 0.20543 0.09128);
+    --color-red-600: oklab(55.910000000000004% 0.20543 0.09128);
+
+    --bg-red-900: oklab(43.008% 0.15828 0.06702);
+    --color-red-900: oklab(43.008% 0.15828 0.06702);
+    --text-red-900: oklab(43.008% 0.15828 0.06702);
+    --border-red-900: oklab(43.008% 0.15828 0.06702);
+    
+    --bg-red-700: oklab(51.644% 0.18972 0.08327);
+    --color-red-700: oklab(51.644% 0.18972 0.08327);
+    --text-red-700: oklab(51.644% 0.18972 0.08327);
+    --border-red-700: oklab(51.644% 0.18972 0.08327);
+
+    --bg-blue-100: oklab(93.89800000000001% -0.01397 -0.01276);
+    --color-blue-100: oklab(93.89800000000001% -0.01397 -0.01276);
+    --text-blue-100: oklab(93.89800000000001% -0.01397 -0.01276);
+    --border-blue-100: oklab(93.89800000000001% -0.01397 -0.01276);
+
+    --text-dark-400: oklab(30.493% 0.00639 -0.03742);
+    --bg-gray-700: oklab(30.493% 0.00639 -0.03742);
+    --bg-dark: oklab(30.493% 0.00639 -0.03742);
+
+    --default-font-family: "Plus Jakarta Sans";
+
+    --breakpoint-md: 62rem;
+
+    --animate-floating: floating 8s ease-in-out infinite;
+}
+
+
