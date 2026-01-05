@@ -51,8 +51,10 @@
                 </a>
             </li>
 
-            <li class="nav-header text-muted small fw-bold mt-3">USER MANAGEMENT</li>
-            <li><a href="#" class="nav-link link-dark"><i class="bi bi-people me-2"></i> Users</a></li>
+            <li class="nav-header text-muted small fw-bold mt-3">MANAJEMEN PERAN/HAK</li>
+            <li><a href="{{ route('core.users.index') }}" class="nav-link {{ request()->routeIs('core.users*') ? 'active' : 'link-dark' }}"><i class="bi bi-people me-2"></i> Data Pengguna</a></li>
+            <li><a href="{{ route('core.roles.index') }}" class="nav-link {{ request()->routeIs('core.roles*') ? 'active' : 'link-dark' }}"><i class="bi bi-people me-2"></i> Peran Pengguna</a></li>
+            <li><a href="{{ route('core.permissions.index') }}" class="nav-link {{ request()->routeIs('core.permissions*') ? 'active' : 'link-dark' }}"><i class="bi bi-people me-2"></i> Hak Akses</a></li>
         @endif
 
         @if (request()->is('admin/daftar-ulang*'))

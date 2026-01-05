@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    @vite(['resources/css/admin.scss', 'resources/js/app.js'])
+    @vite(['resources/css/admin.scss'])
 
     <style>
         body {
@@ -95,6 +95,7 @@
         </div>
     </div>
 
+    @vite(['resources/js/app.js'])
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @stack('scripts')

@@ -22,6 +22,12 @@
                 border: 2px solid #000;
             }
 
+            .pattern-bg {
+                background-color: #f8fafc;
+                background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+                background-size: 20px 20px;
+            }
+
         }
 
         .pattern-bg {

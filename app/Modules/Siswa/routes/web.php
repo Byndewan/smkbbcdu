@@ -20,4 +20,6 @@ Route::middleware([EnsureStudentProfileCompleted::class, 'auth:student', 'role:S
     Route::get('/riwayat-pembayaran', [\App\Modules\DaftarUlang\Controllers\StudentDashboardController::class, 'history'])->name('history');
     Route::get('/tagihan/{id}/invoice', [\App\Modules\DaftarUlang\Controllers\StudentDashboardController::class, 'invoice'])->name('bills.invoice');
 
+    Route::post('/bills/{id}/resubmit', [\App\Modules\DaftarUlang\Controllers\StudentDashboardController::class, 'resubmit'])->name('bills.resubmit');
+
 });

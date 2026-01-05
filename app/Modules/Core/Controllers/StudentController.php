@@ -24,12 +24,12 @@ class StudentController extends Controller
                     'core_classes.name as class_name',
                     'core_majors.abbreviation as major_name'
                 )
+                ->restrictMajor('core_students.major_id')
                 ->orderBy('core_students.created_at', 'desc');
 
             return datatables()->of($data)
                 ->addIndexColumn()
                 ->addColumn('action', function ($row) {
-                    // Tombol Edit & Hapus (Nanti kita bikin)
                     return '<button class="btn btn-sm btn-warning text-white"><i class="bi bi-pencil"></i></button>';
                 })
                 ->make(true);
