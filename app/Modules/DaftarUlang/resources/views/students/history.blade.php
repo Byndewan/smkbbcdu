@@ -50,13 +50,13 @@
                             @if ($trx->status == 'paid')
                                 <span
                                     class="bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full">LUNAS</span>
-                            @elseif($trx->status == 'pending')
+                            @elseif(in_array($trx->status, ['pending_docs', 'payment_review']))
                                 <span
                                     class="bg-yellow-100 text-yellow-700 text-xs font-bold px-3 py-1 rounded-full">DIPROSES</span>
-                            @elseif($trx->status == 'rejected')
-                                <span
-                                    class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1 rounded-full">DITOLAK</span>
-                            @elseif($trx->status == 'draft')
+                            @elseif(in_array($trx->status, ['doc_rejected', 'payment_rejected']))
+                                <span class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1 rounded-full">PERLU
+                                    REVISI</span>
+                            @else
                                 <span
                                     class="bg-gray-100 text-gray-600 text-xs font-bold px-3 py-1 rounded-full">DRAFT</span>
                             @endif
@@ -69,24 +69,33 @@
                             </p>
                         </div>
 
-                        @if ($trx->status == 'rejected')
+                        @if ($trx->status == 'doc_rejected')
                             <div class="bg-red-50 p-3 rounded-lg mb-3">
-                                <p class="text-xs text-red-600 font-semibold mb-1">Alasan Penolakan:</p>
-                                <p class="text-xs text-red-700">{{ $trx->admin_note }}</p>
+                                <p class="text-xs text-red-600 font-semibold mb-1">Dokumen Ditolak:</p>
+                                <p class="text-xs text-red-700 line-clamp-2">{{ $trx->admin_note }}</p>
+                            </div>
+                            <a href="{{ route('student.bills.show', $trx->du_bill_id) }}"
+                                class="block w-full text-center bg-red-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-red-700 transition">
+                                Perbaiki Dokumen
+                            </a>
+                        @elseif ($trx->status == 'payment_rejected')
+                            <div class="bg-red-50 p-3 rounded-lg mb-3">
+                                <p class="text-xs text-red-600 font-semibold mb-1">Pembayaran Ditolak:</p>
+                                <p class="text-xs text-red-700 line-clamp-2">{{ $trx->admin_note }}</p>
                             </div>
                             <a href="{{ route('student.bills.payment', $trx->du_bill_id) }}"
                                 class="block w-full text-center bg-red-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-red-700 transition">
-                                Perbaiki Pembayaran
-                            </a>
-                        @elseif($trx->status == 'draft')
-                            <a href="{{ route('student.bills.payment', $trx->du_bill_id) }}"
-                                class="block w-full text-center bg-blue-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition">
-                                Lanjut Bayar
+                                Perbaiki Data Pembayaran
                             </a>
                         @elseif($trx->status == 'paid')
-                            <a href="{{ route('student.bills.invoice', $bill->id ?? $trx->du_bill_id) }}"
+                            <a href="{{ route('student.bills.invoice', $trx->du_bill_id) }}"
                                 class="block w-full text-center bg-green-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-green-700 transition shadow-sm">
                                 <i class="bi bi-receipt me-1"></i> Lihat Kwitansi
+                            </a>
+                        @elseif($trx->status == 'draft')
+                            <a href="{{ route('student.bills.show', $trx->du_bill_id) }}"
+                                class="block w-full text-center bg-blue-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition">
+                                Lanjut Bayar
                             </a>
                         @endif
 

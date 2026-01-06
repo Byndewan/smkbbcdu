@@ -8,7 +8,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h4 class="fw-bold text-dark mb-1">Dashboard Pemasukan</h4>
-                <p class="text-muted small mb-0">Monitor real-time pembayaran daftar ulang.</p>
+                <p class="text-muted small mb-0">Monitor real-time pembayaran.</p>
             </div>
             <div>
                 <button class="btn btn-outline-primary btn-sm" onclick="window.location.reload()">
@@ -23,8 +23,8 @@
                     <div class="card-body position-relative">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
-                                <p class="mb-1 text-white-50 small text-uppercase fw-bold">Total Pemasukan (Real)</p>
-                                <h2 class="fw-bold mb-0">Rp {{ number_format($grandTotal, 0, ',', '.') }}</h2>
+                                <p class="mb-1 text-white-50 small text-uppercase fw-bold">Total Pemasukan ( {{ $major->abbreviation ?? 'Semua Jurusan' }} )<p>
+                                <h2 class="fw-bold mb-0" id="live-grand-total">Rp {{ number_format($grandTotal, 0, ',', '.') }}</h2>
                             </div>
                             <i class="bi bi-wallet2 fs-1 text-white-50"></i>
                         </div>
@@ -41,7 +41,7 @@
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
                                 <p class="mb-1 text-white-50 small text-uppercase fw-bold">Siswa Lunas</p>
-                                <h2 class="fw-bold mb-0">{{ $totalPaidStudents }} <span class="fs-6 fw-normal">Siswa</span>
+                                <h2 class="fw-bold mb-0" id="live-paid-count">{{ $totalPaidStudents }} <span class="fs-6 fw-normal">Siswa</span>
                                 </h2>
                             </div>
                             <i class="bi bi-people-fill fs-1 text-white-50"></i>
@@ -141,3 +141,50 @@
 
     </div>
 @endsection
+
+
+@push('scripts')
+<script type="module">
+    Echo.channel('admin-channel')
+        .listen('.payment.received', (e) => {
+
+            let audio = new Audio('/notify.mp3');
+            audio.play().catch(error => console.log('Autoplay blocked'));
+
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 5000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer)
+                    toast.addEventListener('mouseleave', Swal.resumeTimer)
+                }
+            });
+
+            Toast.fire({
+                icon: e.type,
+                title: e.message
+            });
+
+            if (e.transaction.status === 'paid') {
+                let currentTotalEl = document.getElementById('live-grand-total');
+                if (currentTotalEl) {
+                    let currentTotal = parseInt(currentTotalEl.innerText.replace(/\./g, ''));
+                    let newAmount = parseInt(e.transaction.total_amount);
+                    let newTotal = currentTotal + newAmount;
+                    currentTotalEl.innerText = new Intl.NumberFormat('id-ID').format(newTotal);
+                    currentTotalEl.classList.add('text-success');
+                    setTimeout(() => currentTotalEl.classList.remove('text-success'), 1000);
+                }
+
+                let currentCountEl = document.getElementById('live-paid-count');
+                if (currentCountEl) {
+                    let currentCount = parseInt(currentCountEl.innerText);
+                    currentCountEl.innerText = currentCount + 1;
+                }
+            }
+        });
+</script>
+@endpush

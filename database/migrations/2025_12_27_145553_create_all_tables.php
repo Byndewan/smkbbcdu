@@ -107,9 +107,7 @@ return new class extends Migration
             $table->foreignId('du_bill_id')->constrained('du_bills')->restrictOnDelete();
             $table->enum('status', ['draft', 'pending', 'verified', 'rejected', 'expired'])->default('draft')->index();
             $table->decimal('amount_to_pay', 15, 2);
-            $table->string('payment_method', 50)->nullable(); // MANUAL atau BNI_VA
-
-            // === KOLOM KHUSUS TF MANUAL ===
+            $table->string('payment_method', 50)->nullable();
             $table->foreignId('bank_id')->nullable()->constrained('fin_banks');
             $table->string('sender_bank_name')->nullable();
             $table->string('sender_account_name')->nullable();
@@ -119,8 +117,6 @@ return new class extends Migration
             $table->string('reference_no')->nullable();
             $table->string('transfer_proof_path')->nullable();
             $table->text('user_note')->nullable();
-
-            // === KOLOM KHUSUS TF OTOMATIS (BNI) ===
             $table->string('va_number', 30)->nullable();
             $table->string('vendor_trx_id')->nullable();
             $table->json('payment_payload')->nullable();
@@ -143,9 +139,6 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // ==========================================
-        // MODULE: CMS
-        // ==========================================
         Schema::create('cms_settings', function (Blueprint $table) {
             $table->id();
             $table->string('key')->unique();

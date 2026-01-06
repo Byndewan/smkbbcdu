@@ -11,18 +11,43 @@
 <body class="bg-gray-50 font-sans pb-20">
 
     <nav class="bg-white shadow-sm px-4 py-3 sticky top-0 z-50">
-        <div class="max-w-2xl mx-auto flex items-center gap-3">
+        <div class="max-w-full mx-auto flex items-center gap-3">
+            @if (($transaction->status ?? '') === 'draft' || ($transaction->status ?? '') === null)
             <a href="{{ route('student.dashboard') }}" class="text-gray-500 hover:text-blue-600">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                 </svg>
             </a>
-            <h1 class="font-bold text-lg text-gray-800 truncate">{{ $bill->title }}</h1>
+            @endif
+            <h1 class="font-bold text-lg text-gray-800 truncate text-center">{{ $bill->title }}</h1>
         </div>
     </nav>
 
-    <div class="max-w-2xl mx-auto mt-6 px-4">
+    <div class="max-w-full mx-auto mt-6 px-4">
+        @if ($transaction && $transaction->status == 'doc_rejected')
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded shadow-sm animate-pulse">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm leading-5 font-bold text-red-800">Dokumen Ditolak</h3>
+                        <div class="mt-2 text-sm leading-5 text-red-700">
+                            <p>Admin Daftar Ulang:</p>
+                            <p class="bg-white p-2 rounded border border-red-200 italic mt-1 font-medium">
+                                "{{ $transaction->admin_note }}"
+                            </p>
+                            <p class="mt-2">Silakan perbaiki dokumen yang ditandai merah di bawah ini.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
 
         <div class="bg-blue-600 text-white rounded-xl p-6 shadow-lg mb-6 relative overflow-hidden">
             <div class="relative z-10">
@@ -115,6 +140,7 @@
 
                         <div class="flex items-center gap-2">
                             <a href="{{ $req->file_path ? Storage::url($req->file_path) : '#' }}" target="_blank"
+                                data-req-id="{{ $req->req_id }}"
                                 class="btn-view px-3 py-2 rounded-lg text-gray-500 border border-gray-200 hover:bg-gray-50 {{ $req->file_path ? '' : 'hidden' }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -148,16 +174,40 @@
     </div>
 
     <div class="fixed bottom-0 w-full bg-white border-t border-gray-200 p-4 shadow-lg">
-        <div class="max-w-2xl mx-auto flex items-center justify-between">
+        <div class="max-w-full mx-auto flex items-center justify-between">
             <div>
-                <p class="text-xs text-gray-400">Total Pembayaran</p>
-                <p class="font-bold text-lg text-blue-600">Rp {{ number_format($bill->amount, 0, ',', '.') }}</p>
+                <p class="text-xs text-gray-400">Status Transaksi</p>
+                <span
+                    class="font-bold text-lg {{ ($transaction->status ?? '') == 'doc_rejected' ? 'text-red-600' : 'text-blue-600' }}">
+                    @if (($transaction->status ?? '') == 'doc_rejected')
+                        Perlu Revisi
+                    @elseif(($transaction->status ?? '') == 'pending_docs')
+                        Menunggu Verifikasi
+                    @else
+                        Draft
+                    @endif
+                </span>
             </div>
 
-            <a href="{{ route('student.bills.payment', $bill->id) }}" id="btn-next"
-                class="bg-gray-300 text-white px-6 py-3 rounded-xl font-bold transition text-center pointer-events-none cursor-not-allowed">
-                Lanjut Bayar
-            </a>
+            @if (!$transaction || $transaction->status == 'draft')
+                <a href="{{ route('student.bills.payment', $bill->id) }}" id="btn-next"
+                    class="bg-gray-300 text-white px-6 py-3 rounded-xl font-bold transition text-center pointer-events-none cursor-not-allowed">
+                    Lanjut Bayar
+                </a>
+            @elseif($transaction->status == 'doc_rejected')
+                <form action="{{ route('student.bills.resubmit', $transaction->id) }}" method="POST">
+                    @csrf
+                    <button type="submit" id="btn-next"
+                        class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-bold transition shadow-lg transform active:scale-95">
+                        <i class="bi bi-send-fill me-2"></i> Kirim Perbaikan Dokumen
+                    </button>
+                </form>
+            @elseif($transaction->status == 'pending_docs')
+                <button type="button" disabled
+                    class="bg-gray-400 text-white px-6 py-3 rounded-xl font-bold cursor-not-allowed">
+                    <i class="bi bi-hourglass-split me-2"></i> Menunggu Verifikasi...
+                </button>
+            @endif
         </div>
     </div>
 
@@ -211,15 +261,19 @@
                                     'bg-gray-100 text-gray-400 bg-red-100 text-red-600 bg-green-100 text-green-600'
                                 )
                                 .addClass('bg-blue-100 text-blue-600');
+
                             iconContainer.html(`
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             `);
-                            let textContainer = btnLabel.parent().parent().find(
-                                '.status-text-container');
-                            let btnView = $(`.btn-view[data-req-id="${reqId}"]`);
-                            btnView.attr('href', response.file_url).removeClass('hidden');
-                            btnLabel.text('Ganti').removeClass(
-                                'opacity-50 cursor-not-allowed');
+
+                            let btnView = $(
+                                `.btn-view[data-req-id="${reqId}"]`);
+                            let freshUrl = response.file_url + '?t=' + new Date().getTime();
+                            btnView.attr('href', freshUrl).removeClass(
+                                'hidden');
+                            let btnLabel = $(`label[for="file-${reqId}"]`);
+                            btnLabel.text('Ganti').removeClass('opacity-50 cursor-not-allowed');
+
                             checkAllUploaded();
 
                             Swal.fire({

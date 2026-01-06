@@ -15,74 +15,116 @@ class FinanceVerifierController extends Controller
 {
     use ApiResponse;
 
-    public function index()
+    public function index(Request $request)
     {
-        if (request()->ajax()) {
+        $status = $request->get('status', 'payment_review');
+
+        if ($request->ajax()) {
             $data = DB::table('du_transactions')
                 ->join('core_students', 'du_transactions.student_id', '=', 'core_students.id')
                 ->join('du_bills', 'du_transactions.du_bill_id', '=', 'du_bills.id')
+                ->leftJoin('core_classes', 'core_students.current_class_id', '=', 'core_classes.id')
                 ->select(
                     'du_transactions.*',
                     'core_students.name as student_name',
+                    'core_students.nipd',
+                    'core_classes.name as class_name',
                     'du_bills.title as bill_title'
                 )
-                ->where('du_transactions.status', 'awaiting_payment')
-                ->orderBy('du_transactions.updated_at', 'asc');
+                ->restrictMajor('core_students.major_id')
+                ->where('du_transactions.status', $status)
+                ->orderBy('du_transactions.updated_at', 'desc');
 
             return datatables()->of($data)
                 ->addIndexColumn()
-                ->editColumn('trx_code', function ($row) {
-                    return '<span class="fw-bold text-primary">#'.$row->trx_code.'</span>';
-                })
-                ->editColumn('student_name', function ($row) {
-                    return '<div class="fw-bold text-dark">'.$row->student_name.'</div>';
-                })
-                ->editColumn('total_amount', function ($row) {
-                    return 'Rp '.number_format($row->total_amount, 0, ',', '.');
-                })
+                ->editColumn('trx_code', fn ($row) => '<span class="fw-bold text-primary">#'.$row->trx_code.'</span>')
+                ->editColumn('student_name', fn ($row) => '<strong>'.$row->student_name.'</strong><br><small class="text-muted">'.$row->nipd.' - '.($row->class_name ?? '-').'</small>')
+                ->editColumn('total_amount', fn ($row) => '<span class="fw-bold text-success">Rp '.number_format($row->total_amount, 0, ',', '.').'</span>')
                 ->editColumn('payment_method', function ($row) {
-                    return '<span class="badge bg-primary bg-opacity-10 text-primary">'.strtoupper($row->payment_method).'</span>';
+                    $color = ($row->payment_method == 'manual') ? 'warning' : 'info';
+                    $label = ($row->payment_method == 'manual') ? 'Transfer Manual' : 'BNI VA (Midtrans)';
+
+                    return '<span class="badge bg-'.$color.' bg-opacity-10 text-'.$color.'">'.$label.'</span>';
                 })
-                ->editColumn('updated_at', function ($row) {
-                    return date('d M Y H:i', strtotime($row->updated_at));
+                ->addColumn('action', function ($row) use ($status) {
+                    $url = route('finance.transaction.verification', $row->id);
+
+                    if ($status === 'paid') {
+                        return '
+                            <button onclick="const w = 1500; const h = 900;const left = (screen.width - w) / 2;const top = (screen.height - h) / 2;window.open(\''.$url.'\', \'FinanceWindow\',`width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`)"
+                            class="btn btn-sm btn-secondary fw-bold text-white shadow-sm">
+                                <i class="bi bi-exclamation-circle-fill me-1"></i> Detail
+                            </button>
+                        ';
+                    }
+
+                    if ($status === 'payment_rejected') {
+                        return '
+                            <button onclick="const w = 1500; const h = 900;const left = (screen.width - w) / 2;const top = (screen.height - h) / 2;window.open(\''.$url.'\', \'FinanceWindow\',`width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`)"
+                            class="btn btn-sm btn-danger fw-bold text-white shadow-sm">
+                                <i class="bi bi-exclamation-circle-fill me-1"></i> Klik Jika Salah Verifikasi!
+                            </button>
+                        ';
+                    }
+
+                    return '
+                        <button onclick="const w = 1500; const h = 900;const left = (screen.width - w) / 2;const top = (screen.height - h) / 2;window.open(\''.$url.'\', \'FinanceWindow\',`width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`)"
+                        class="btn btn-sm btn-primary fw-bold text-white shadow-sm">
+                            <i class="bi bi-cash-stack me-1"></i> Verifikasi
+                        </button>
+                    ';
                 })
-                ->addColumn('action', function ($row) {
-                    return '<button type="button" class="btn btn-sm btn-primary fw-bold px-3 btn-modal"
-                                data-url="'.route('finance.show', $row->id).'">
-                                <i class="bi bi-cash-stack me-1"></i> Cek Dana
-                            </button>';
-                })
-                ->rawColumns(['trx_code', 'student_name', 'payment_method', 'action'])
+                ->rawColumns(['trx_code', 'student_name', 'total_amount', 'payment_method', 'action'])
                 ->make(true);
         }
 
-        return view('Keuangan::finance.index');
+        $counts = [
+            'payment_review' => DB::table('du_transactions')->where('status', 'payment_review')->count(),
+            'payment_rejected' => DB::table('du_transactions')->where('status', 'payment_rejected')->count(),
+            'paid' => DB::table('du_transactions')->where('status', 'paid')->count(),
+        ];
+
+        return view('Keuangan::finance.index', compact('counts'));
     }
 
-    public function show($id)
+    public function verification($id)
     {
         $trx = DB::table('du_transactions')
             ->join('core_students', 'du_transactions.student_id', '=', 'core_students.id')
             ->join('du_bills', 'du_transactions.du_bill_id', '=', 'du_bills.id')
-            ->select('du_transactions.*', 'core_students.name as student_name', 'du_bills.title as bill_title')
+            ->leftJoin('core_classes', 'core_students.current_class_id', '=', 'core_classes.id')
+            ->select(
+                'du_transactions.*',
+                'core_students.name as student_name',
+                'core_students.nipd',
+                'core_classes.name as class_name',
+                'du_bills.title as bill_title'
+            )
             ->where('du_transactions.id', $id)
             ->first();
 
-        return view('Keuangan::finance.show', compact('trx'));
+        if (! $trx) {
+            return 'Data Transaksi tidak ditemukan.';
+        }
+
+        return view('Keuangan::finance.verification_window', compact('trx'));
     }
 
     public function update(Request $request, $id)
     {
-        $paymentStatus = $request->payment_status;
-        $adminNote = $request->admin_note;
+        $request->validate([
+            'payment_status' => 'required|in:valid,invalid',
+            'admin_note' => 'nullable|string',
+        ]);
 
-        if ($paymentStatus == 'valid') {
+        if ($request->payment_status == 'valid') {
             $finalStatus = 'paid';
-            $finalNote = null;
+            $finalNote = 'Pembayaran Diterima.';
         } else {
-            $finalStatus = 'rejected';
-            $finalNote = $adminNote;
+            $finalStatus = 'payment_rejected';
+            $finalNote = $request->admin_note ?? 'Bukti pembayaran tidak valid / dana tidak masuk.';
         }
+
         DB::beginTransaction();
 
         try {
@@ -91,6 +133,7 @@ class FinanceVerifierController extends Controller
                 'admin_note' => $finalNote,
                 'updated_at' => now(),
             ]);
+
             DB::commit();
             if ($finalStatus == 'paid') {
                 $trxEloquent = DuTransaction::with('student')->find($id);
@@ -104,12 +147,16 @@ class FinanceVerifierController extends Controller
                 }
             }
 
-            return redirect()->route('finance.index')
-                ->with('success', 'Verifikasi Pembayaran Berhasil.');
+            return response()->json([
+                'status' => true,
+                'message' => ($finalStatus == 'paid') ? 'Verifikasi Berhasil! Email Terkirim.' : 'Verifikasi Berhasil! Dikembalikan ke siswa.',
+                'close_window' => true,
+            ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Terjadi kesalahan sistem: '.$e->getMessage());
+
+            return response()->json(['status' => false, 'message' => $e->getMessage()], 500);
         }
     }
 }

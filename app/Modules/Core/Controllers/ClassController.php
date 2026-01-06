@@ -17,6 +17,7 @@ class ClassController extends Controller
             $data = DB::table('core_classes')
                 ->join('core_majors', 'core_classes.major_id', '=', 'core_majors.id')
                 ->select('core_classes.*', 'core_majors.abbreviation as major_abb')
+                ->restrictMajor('core_majors.id')
                 ->orderBy('core_classes.code', 'asc');
 
             return datatables()->of($data)

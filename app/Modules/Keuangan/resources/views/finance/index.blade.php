@@ -14,6 +14,31 @@
 
         <div class="card border-0 shadow-sm">
             <div class="card-body">
+
+                <ul class="nav nav-pills mb-4">
+                    <li class="nav-item">
+                        <button class="nav-link active fw-bold position-relative"
+                            onclick="filterStatus('payment_review', this)">
+                            <i class="bi bi-hourglass-split me-1"></i> Perlu Di Cek (Pembayaran)
+                            @if (isset($counts['payment_review']) && $counts['payment_review'] > 0)
+                                <span
+                                    class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-danger">
+                                    {{ $counts['payment_review'] }}
+                                </span>
+                            @endif
+                        </button>
+                    </li>
+                    <li class="nav-item ms-2">
+                        <button class="nav-link fw-bold" onclick="filterStatus('payment_rejected', this)">
+                            <i class="bi bi-x-circle me-1"></i> Ditolak
+                        </button>
+                    </li>
+                    <li class="nav-item ms-2">
+                        <button class="nav-link fw-bold" onclick="filterStatus('paid', this)">
+                            <i class="bi bi-check-circle-fill me-1"></i> Lunas (Arsip)
+                        </button>
+                    </li>
+                </ul>
                 <table id="datatable" class="table table-hover w-100">
                     <thead class="bg-light text-uppercase small text-secondary">
                         <tr>
@@ -23,7 +48,6 @@
                             <th>Tagihan</th>
                             <th>Metode</th>
                             <th>Nominal</th>
-                            <th>Tanggal</th>
                             <th width="15%" class="text-center">Aksi</th>
                         </tr>
                     </thead>
@@ -35,6 +59,12 @@
 
     @push('scripts')
         <script type="module">
+            window.filterStatus = function(status, element) {
+                $('.nav-link').removeClass('active');
+                $(element).addClass('active');
+                $('#datatable').DataTable().ajax.url("{{ route('finance.index') }}?status=" + status).load();
+            }
+
             $(document).ready(function() {
                 $('#datatable').DataTable({
                     processing: true,
@@ -65,10 +95,6 @@
                         {
                             data: 'total_amount',
                             name: 'du_transactions.total_amount'
-                        },
-                        {
-                            data: 'updated_at',
-                            name: 'du_transactions.updated_at'
                         },
                         {
                             data: 'action',
