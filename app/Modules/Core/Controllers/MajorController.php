@@ -3,6 +3,7 @@
 namespace App\Modules\Core\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Major;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Traits\ApiResponse;
@@ -14,7 +15,8 @@ class MajorController extends Controller
     public function index()
     {
         if (request()->ajax()) {
-            $data = DB::table('core_majors')->select('*');
+            $data = Major::query()->restricted()->latest();
+
             return datatables()->of($data)
                 ->addIndexColumn()
                 ->addColumn('action', function ($row) {
@@ -42,12 +44,11 @@ class MajorController extends Controller
             'abbreviation' => 'required'
         ]);
 
-        DB::table('core_majors')->insert([
+        Major::create([
             'code' => $request->code,
             'name' => $request->name,
             'abbreviation' => $request->abbreviation,
             'description' => $request->description,
-            'created_at' => now()
         ]);
 
         return $this->success(null, 'Jurusan berhasil ditambahkan!');
@@ -55,12 +56,7 @@ class MajorController extends Controller
 
     public function edit($id)
     {
-        $data = DB::table('core_majors')->where('id', $id)->first();
-
-        if (!$data) {
-            return '<div class="p-3 text-danger">Data tidak ditemukan</div>';
-        }
-
+        $data = Major::findOrFail($id);
         return view('Core::majors.form', compact('data'));
     }
 
@@ -71,12 +67,13 @@ class MajorController extends Controller
             'name' => 'required',
             'abbreviation' => 'required'
         ]);
-        DB::table('core_majors')->where('id', $id)->update([
+
+        $major = Major::findOrFail($id);
+        $major->update([
             'code' => $request->code,
             'name' => $request->name,
             'abbreviation' => $request->abbreviation,
             'description' => $request->description,
-            'updated_at' => now()
         ]);
 
         return $this->success(null, 'Data jurusan berhasil diperbarui!');
@@ -84,12 +81,15 @@ class MajorController extends Controller
 
     public function destroy($id)
     {
-        $isUsed = DB::table('core_classes')->where('major_id', $id)->exists();
+        $major = Major::findOrFail($id);
+        $isUsed = DB::table('core_classes')->where('major_id', $id)->whereNull('deleted_at')->exists();
+
         if ($isUsed) {
             return $this->error('Gagal hapus! Jurusan ini sedang digunakan oleh Kelas.', 422);
         }
-        DB::table('core_majors')->where('id', $id)->delete();
 
-        return $this->success(null, 'Data jurusan berhasil dihapus!');
+        $major->delete();
+
+        return $this->success(null, 'Data jurusan berhasil dihapus (Masuk Tong Sampah)!');
     }
 }

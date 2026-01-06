@@ -16,19 +16,19 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required',
+            'email' => 'required|email',
             'password' => 'required',
         ]);
 
         $credentials = $request->only('email', 'password');
-        if (Auth::guard('web')->attempt($credentials, $request->remember)) {
+        $remember = $request->has('remember');
+        if (Auth::guard('web')->attempt($credentials, $remember)) {
             $request->session()->regenerate();
-            return redirect()->route('landing');
+            return redirect()->intended(route('landing'));
         }
-        if (Auth::guard('student')->attempt(['email' => $request->email, 'password' => $request->password], $request->remember)) {
+        if (Auth::guard('student')->attempt($credentials, $remember)) {
             $request->session()->regenerate();
-
-            return redirect()->route('student.dashboard');
+            return redirect()->intended(route('student.dashboard'));
         }
 
         return back()->withErrors([

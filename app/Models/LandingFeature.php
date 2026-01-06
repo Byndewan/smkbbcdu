@@ -4,8 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class CoreClass extends Model
+class LandingFeature extends Model
 {
-    protected $table = 'core_classes';
     protected $guarded = ['id'];
 }

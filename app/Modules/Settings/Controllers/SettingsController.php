@@ -3,6 +3,9 @@
 namespace App\Modules\Settings\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\LandingFaq;
+use App\Models\LandingFeature;
+use App\Models\LandingStep;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
@@ -13,11 +16,13 @@ class SettingsController extends Controller
     {
         $settings = DB::table('settings')->pluck('value', 'key')->toArray();
         $setting = (object) $settings;
+
         $counts = [
-            'features' => DB::table('landing_features')->count(),
-            'steps' => DB::table('landing_steps')->count(),
-            'faqs' => DB::table('landing_faqs')->count(),
+            'features' => LandingFeature::count(),
+            'steps' => LandingStep::count(),
+            'faqs' => LandingFaq::count(),
         ];
+
         return view('Settings::front.index', compact('setting', 'counts'));
     }
 
@@ -60,41 +65,31 @@ class SettingsController extends Controller
     public function getData($type)
     {
         if ($type == 'features') {
-            $query = DB::table('landing_features')->orderBy('sort_order', 'asc');
+            $query = LandingFeature::query()->orderBy('sort_order', 'asc');
 
             return DataTables::of($query)
                 ->addIndexColumn()
-                ->editColumn('features_image', function ($row) {
-                    return '<img src="'.asset($row->features_image).'" width="50" class="rounded">';
-                })
-                ->addColumn('action', function ($row) {
-                    return $this->getActionButtons('feature', $row);
-                })
+                ->editColumn('features_image', fn ($row) => '<img src="'.asset($row->features_image).'" width="50" class="rounded">')
+                ->addColumn('action', fn ($row) => $this->getActionButtons('feature', $row))
                 ->rawColumns(['features_image', 'action'])->make(true);
         }
 
         if ($type == 'steps') {
-            $query = DB::table('landing_steps')->orderBy('sort_order', 'asc');
+            $query = LandingStep::query()->orderBy('sort_order', 'asc');
 
             return DataTables::of($query)
                 ->addIndexColumn()
-                ->editColumn('how_icon', function ($row) {
-                    return '<i class="'.$row->how_icon.' fs-4 text-danger"></i>';
-                })
-                ->addColumn('action', function ($row) {
-                    return $this->getActionButtons('step', $row);
-                })
+                ->editColumn('how_icon', fn ($row) => '<i class="'.$row->how_icon.' fs-4 text-danger"></i>')
+                ->addColumn('action', fn ($row) => $this->getActionButtons('step', $row))
                 ->rawColumns(['how_icon', 'action'])->make(true);
         }
 
         if ($type == 'faqs') {
-            $query = DB::table('landing_faqs')->orderBy('sort_order', 'asc');
+            $query = LandingFaq::query()->orderBy('sort_order', 'asc');
 
             return DataTables::of($query)
                 ->addIndexColumn()
-                ->addColumn('action', function ($row) {
-                    return $this->getActionButtons('faq', $row);
-                })
+                ->addColumn('action', fn ($row) => $this->getActionButtons('faq', $row))
                 ->rawColumns(['action'])->make(true);
         }
     }
@@ -105,7 +100,6 @@ class SettingsController extends Controller
 
         return '
             <div class="btn-group btn-group-sm gap-1">
-                <button type="button" class="btn btn-info text-white btn-preview" data-type="'.$type.'" data-row="'.$jsonData.'"><i class="bi bi-eye"></i></button>
                 <button type="button" class="btn btn-warning text-white btn-edit" data-type="'.$type.'" data-row="'.$jsonData.'"><i class="bi bi-pencil"></i></button>
                 <button type="button" class="btn btn-danger btn-delete" data-url="'.route('settings.front.'.$type.'.destroy', $row->id).'"><i class="bi bi-trash"></i></button>
             </div>';
@@ -117,7 +111,6 @@ class SettingsController extends Controller
             'features_card_heading' => $request->heading,
             'features_card_sort_desc' => $request->desc,
             'sort_order' => $request->sort_order ?? 0,
-            'updated_at' => now(),
         ];
 
         if ($request->hasFile('image')) {
@@ -125,14 +118,13 @@ class SettingsController extends Controller
         }
 
         if ($request->id) {
-            DB::table('landing_features')->where('id', $request->id)->update($data);
+            LandingFeature::where('id', $request->id)->update($data);
             $msg = 'Fitur diperbarui';
         } else {
-            $data['created_at'] = now();
             if (! $request->hasFile('image')) {
                 return back()->with('error', 'Gambar wajib diupload');
             }
-            DB::table('landing_features')->insert($data);
+            LandingFeature::create($data);
             $msg = 'Fitur ditambahkan';
         }
 
@@ -141,7 +133,7 @@ class SettingsController extends Controller
 
     public function destroyFeature($id)
     {
-        DB::table('landing_features')->where('id', $id)->delete();
+        LandingFeature::destroy($id);
 
         return response()->json(['message' => 'Fitur berhasil dihapus']);
     }
@@ -153,26 +145,18 @@ class SettingsController extends Controller
             'how_item_heading' => $request->heading,
             'how_item_sort_desc' => $request->desc,
             'sort_order' => $request->sort_order ?? 0,
-            'updated_at' => now(),
         ];
 
-        if ($request->id) {
-            DB::table('landing_steps')->where('id', $request->id)->update($data);
-            $msg = 'Langkah diperbarui';
-        } else {
-            $data['created_at'] = now();
-            DB::table('landing_steps')->insert($data);
-            $msg = 'Langkah ditambahkan';
-        }
+        LandingStep::updateOrCreate(['id' => $request->id], $data);
 
-        return back()->with('success', $msg);
+        return back()->with('success', 'Langkah panduan disimpan');
     }
 
     public function destroyStep($id)
     {
-        DB::table('landing_steps')->where('id', $id)->delete();
+        LandingStep::destroy($id);
 
-        return response()->json(['message' => 'Langkah panduan berhasil dihapus']);
+        return response()->json(['message' => 'Langkah berhasil dihapus']);
     }
 
     public function saveFaq(Request $request)
@@ -183,24 +167,16 @@ class SettingsController extends Controller
             'faq_card_icon' => $request->icon,
             'faq_card_title' => $request->title,
             'sort_order' => $request->sort_order ?? 0,
-            'updated_at' => now(),
         ];
 
-        if ($request->id) {
-            DB::table('landing_faqs')->where('id', $request->id)->update($data);
-            $msg = 'FAQ diperbarui';
-        } else {
-            $data['created_at'] = now();
-            DB::table('landing_faqs')->insert($data);
-            $msg = 'FAQ ditambahkan';
-        }
+        LandingFaq::updateOrCreate(['id' => $request->id], $data);
 
-        return back()->with('success', $msg);
+        return back()->with('success', 'FAQ disimpan');
     }
 
     public function destroyFaq($id)
     {
-        DB::table('landing_faqs')->where('id', $id)->delete();
+        LandingFaq::destroy($id);
 
         return response()->json(['message' => 'FAQ berhasil dihapus']);
     }

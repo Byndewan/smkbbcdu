@@ -4,6 +4,8 @@ namespace App\Modules\DaftarUlang\Controllers;
 
 use App\Events\PaymentReceived;
 use App\Http\Controllers\Controller;
+use App\Models\Bill;
+use App\Models\DuTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -13,25 +15,27 @@ use Midtrans\CoreApi;
 
 class StudentDashboardController extends Controller
 {
-    public function index()
+    private function getActiveBill($student)
     {
-        $student = Auth::guard('student')->user();
-
-        $activeBill = DB::table('du_bills')
-            ->where('is_active', true)
+        return Bill::where('is_active', true)
+            ->where('target_school_year_id', $student->school_year_id)
             ->where(function ($query) use ($student) {
                 $query->where('target_major_id', $student->major_id)
                     ->orWhereNull('target_major_id');
             })
-            ->where('target_school_year_id', $student->school_year_id)
             ->first();
+    }
+
+    public function index()
+    {
+        $student = Auth::guard('student')->user();
+        $activeBill = $this->getActiveBill($student);
 
         $trxStatus = null;
         $trxNote = null;
 
         if ($activeBill) {
-            $transaction = DB::table('du_transactions')
-                ->where('student_id', $student->id)
+            $transaction = DuTransaction::where('student_id', $student->id)
                 ->where('du_bill_id', $activeBill->id)
                 ->first();
 
@@ -47,25 +51,19 @@ class StudentDashboardController extends Controller
     public function show($id)
     {
         $student = Auth::guard('student')->user();
-        $bill = DB::table('du_bills')
-            ->where('id', $id)
+        $bill = Bill::where('id', $id)
             ->where('is_active', true)
-            ->where(function ($query) use ($student) {
-                $query->where('target_major_id', $student->major_id)
-                    ->orWhereNull('target_major_id');
-            })
             ->where('target_school_year_id', $student->school_year_id)
             ->first();
 
         if (! $bill) {
-            return redirect()->route('student.dashboard')->with('error', 'Tagihan tidak ditemukan.');
+            return redirect()->route('student.dashboard')->with('error', 'Tagihan tidak ditemukan / tidak aktif.');
         }
 
-        $transaction = DB::table('du_transactions')
+        $transaction = DuTransaction::with('files')
             ->where('student_id', $student->id)
             ->where('du_bill_id', $bill->id)
             ->first();
-
         if ($transaction) {
             if ($transaction->status == 'payment_rejected') {
                 return redirect()->route('student.bills.payment', $id);
@@ -74,24 +72,15 @@ class StudentDashboardController extends Controller
                 return $this->invoice($bill->id);
             }
         }
+        $requirements = $bill->requirements->map(function ($req) use ($transaction) {
+            $file = $transaction ? $transaction->files->firstWhere('du_bill_requirement_id', $req->id) : null;
+            $req->file_path = $file ? $file->file_path : null;
+            $req->file_status = $file ? $file->status : null;
+            $req->reject_reason = $file ? $file->reject_reason : null;
+            $req->req_id = $req->id;
 
-        $transactionId = $transaction ? $transaction->id : null;
-
-        $requirements = DB::table('du_bill_requirements as req')
-            ->leftJoin('du_transaction_files as file', function ($join) use ($transactionId) {
-                $join->on('req.id', '=', 'file.du_bill_requirement_id')
-                    ->where('file.du_transaction_id', '=', $transactionId);
-            })
-            ->where('req.du_bill_id', $id)
-            ->select(
-                'req.id as req_id',
-                'req.document_name',
-                'req.is_mandatory',
-                'file.file_path',
-                'file.status as file_status',
-                'file.reject_reason'
-            )
-            ->get();
+            return $req;
+        });
 
         return view('DaftarUlang::students.document', compact('student', 'bill', 'requirements', 'transaction'));
     }
@@ -105,66 +94,48 @@ class StudentDashboardController extends Controller
         ]);
 
         $student = Auth::guard('student')->user();
-        $billId = $request->bill_id;
 
         try {
             DB::beginTransaction();
-            $transaction = DB::table('du_transactions')
-                ->where('student_id', $student->id)
-                ->where('du_bill_id', $billId)
-                ->first();
-            if (! $transaction) {
-                $trxCode = 'TRX-'.date('y').$student->nipd.'-'.strtoupper(Str::random(4));
-                $transactionId = DB::table('du_transactions')->insertGetId([
-                    'trx_code' => $trxCode,
+            $transaction = DuTransaction::firstOrCreate(
+                [
                     'student_id' => $student->id,
-                    'du_bill_id' => $billId,
+                    'du_bill_id' => $request->bill_id,
+                ],
+                [
+                    'trx_code' => 'TRX-'.date('y').$student->nipd.'-'.strtoupper(Str::random(4)),
                     'status' => 'draft',
                     'total_amount' => 0,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            } else {
-                $transactionId = $transaction->id;
-            }
+                ]
+            );
+
             $file = $request->file('file');
             $filename = time().'_'.$file->getClientOriginalName();
             $path = $file->storeAs('public/transactions/'.$student->id, $filename);
-            $existingFile = DB::table('du_transaction_files')
-                ->where('du_transaction_id', $transactionId)
-                ->where('du_bill_requirement_id', $request->req_id)
-                ->first();
-            if ($existingFile) {
-                $newRejectReason = null;
-                if ($existingFile->status == 'invalid' && ! empty($existingFile->reject_reason)) {
-                    $newRejectReason = 'Untuk Dokumen Ini Sudah Diperbaiki Sesuai Dengan Alasan Yang Anda Berikan Sebelumnya: '.$existingFile->reject_reason;
-                }
-                DB::table('du_transaction_files')
-                    ->where('id', $existingFile->id)
-                    ->update([
-                        'file_path' => $path,
-                        'file_name' => $filename,
-                        'mime_type' => $file->getClientMimeType(),
-                        'reject_reason' => $newRejectReason,
-                        'updated_at' => now(),
-                    ]);
-            } else {
-                DB::table('du_transaction_files')->insert([
-                    'du_transaction_id' => $transactionId,
-                    'du_bill_requirement_id' => $request->req_id,
+            $trxFile = $transaction->files()->where('du_bill_requirement_id', $request->req_id)->first();
+
+            $newRejectReason = null;
+            if ($trxFile && $trxFile->status == 'invalid' && ! empty($trxFile->reject_reason)) {
+                $newRejectReason = 'Revisi: '.$trxFile->reject_reason;
+            }
+
+            $transaction->files()->updateOrCreate(
+                ['du_bill_requirement_id' => $request->req_id],
+                [
                     'file_path' => $path,
                     'file_name' => $filename,
                     'mime_type' => $file->getClientMimeType(),
                     'status' => 'pending',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
+                    'reject_reason' => $newRejectReason,
+                ]
+            );
+
             $publicUrl = \Illuminate\Support\Facades\Storage::url($path);
 
             DB::commit();
 
             return response()->json(['status' => 'success', 'message' => 'File berhasil diupload!', 'file_url' => asset($publicUrl)]);
+
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -175,31 +146,22 @@ class StudentDashboardController extends Controller
     public function payment($id)
     {
         $student = Auth::guard('student')->user();
-        $bill = DB::table('du_bills')->where('id', $id)->first();
-        if (! $bill) {
-            abort(404);
-        }
-        $transaction = DB::table('du_transactions')
-            ->where('student_id', $student->id)
-            ->where('du_bill_id', $id)
-            ->first();
+        $bill = Bill::findOrFail($id);
+
+        $transaction = DuTransaction::where('student_id', $student->id)->where('du_bill_id', $id)->first();
+
         if (! $transaction) {
             return redirect()->route('student.bills.show', $id)->with('error', 'Selesaikan upload dokumen dulu!');
         }
-        $mandatoryReqIds = DB::table('du_bill_requirements')
-            ->where('du_bill_id', $id)
-            ->where('is_mandatory', true)
-            ->pluck('id')
-            ->toArray();
-        $uploadedReqIds = DB::table('du_transaction_files')
-            ->where('du_transaction_id', $transaction->id)
-            ->pluck('du_bill_requirement_id')
-            ->toArray();
+        $mandatoryReqIds = $bill->requirements()->where('is_mandatory', true)->pluck('id')->toArray();
+        $uploadedReqIds = $transaction->files()->pluck('du_bill_requirement_id')->toArray();
+
         $missing = array_diff($mandatoryReqIds, $uploadedReqIds);
+
         if (! empty($missing)) {
-            return redirect()->route('student.bills.show', $id)
-                ->with('error', 'Mohon lengkapi semua dokumen persyaratan sebelum lanjut bayar.');
+            return redirect()->route('student.bills.show', $id)->with('error', 'Mohon lengkapi semua dokumen persyaratan sebelum lanjut bayar.');
         }
+
         $bankAccount = [
             'bank_name' => 'Bank BNI',
             'account_number' => '1234567890',
@@ -218,11 +180,10 @@ class StudentDashboardController extends Controller
 
         try {
             DB::beginTransaction();
-            $transaction = DB::table('du_transactions')->where('id', $request->du_transaction_id)->first();
+            $transaction = DuTransaction::findOrFail($request->du_transaction_id);
+            $bill = $transaction->bill;
+            $student = $transaction->student;
             $newStatus = ($transaction->status == 'payment_rejected') ? 'payment_review' : 'pending_docs';
-            $bill = DB::table('du_bills')->where('id', $transaction->du_bill_id)->first();
-            $student = DB::table('core_students')->where('id', $transaction->student_id)->first();
-
             if ($request->payment_method == 'manual') {
                 $request->validate([
                     'bank_sender' => 'required',
@@ -241,29 +202,25 @@ class StudentDashboardController extends Controller
                     'payment_date' => $request->payment_date,
                     'total_amount' => $bill->amount,
                     'admin_note' => null,
-                    'updated_at' => now(),
                 ];
 
                 if ($request->hasFile('proof_file')) {
                     $file = $request->file('proof_file');
                     $filename = 'BUKTI_'.time().'_'.$transaction->trx_code.'.'.$file->getClientOriginalExtension();
-                    $updateData['proof_path'] = $file->storeAs('public/payments/'.$transaction->student_id, $filename);
+                    $updateData['proof_path'] = $file->storeAs('public/payments/'.$student->id, $filename);
                 }
 
-                DB::table('du_transactions')->where('id', $transaction->id)->update($updateData);
+                $transaction->update($updateData);
+                PaymentReceived::dispatch($transaction, "Order Baru: {$student->name} (Manual)", 'info');
 
-                PaymentReceived::dispatch($transaction, "Order Baru: {$student->name} membuat tagihan.", 'info');
                 DB::commit();
 
-                $msg = ($newStatus == 'payment_review')
-                    ? 'Perbaikan data berhasil dikirim ke Bagian Keuangan.'
-                    : 'Pembayaran berhasil dikirim! Menunggu verifikasi dokumen.';
+                $msg = ($newStatus == 'payment_review') ? 'Perbaikan data terkirim.' : 'Pembayaran dikirim! Menunggu verifikasi.';
 
                 return redirect()->route('student.dashboard')->with('success', $msg);
             } elseif ($request->payment_method == 'bni') {
                 if ($transaction->va_number && $transaction->payment_expiry_time > now()) {
                     DB::rollBack();
-
                     return redirect()->back()->with('success', 'Nomor VA Anda masih aktif.');
                 }
 
@@ -273,6 +230,7 @@ class StudentDashboardController extends Controller
                 Config::$is3ds = true;
 
                 $customOrderId = $transaction->trx_code.'-'.time();
+
                 $params = [
                     'payment_type' => 'bank_transfer',
                     'transaction_details' => [
@@ -291,7 +249,7 @@ class StudentDashboardController extends Controller
                 $response = CoreApi::charge($params);
                 $vaNumber = $response->va_numbers[0]->va_number ?? null;
 
-                DB::table('du_transactions')->where('id', $transaction->id)->update([
+                $transaction->update([
                     'status' => $newStatus,
                     'payment_method' => 'bni',
                     'midtrans_transaction_id' => $response->transaction_id,
@@ -299,10 +257,9 @@ class StudentDashboardController extends Controller
                     'payment_expiry_time' => $response->expiry_time,
                     'midtrans_response' => json_encode($response),
                     'total_amount' => $bill->amount,
-                    'updated_at' => now(),
                 ]);
 
-                PaymentReceived::dispatch($transaction, "Order Baru: {$student->name} membuat tagihan.", 'info');
+                PaymentReceived::dispatch($transaction, "Order Baru: {$student->name} (Midtrans)", 'info');
 
                 DB::commit();
 
@@ -318,34 +275,20 @@ class StudentDashboardController extends Controller
 
     public function resubmit(Request $request, $id)
     {
-        $transaction = DB::table('du_transactions')->where('id', $id)->first();
-        $student = DB::table('core_students')->where('id', $transaction->student_id)->first();
-
-        if (! $transaction) {
-            return back()->with('error', 'Transaksi tidak ditemukan.');
-        }
+        $transaction = DuTransaction::findOrFail($id);
+        $student = $transaction->student;
 
         if ($transaction->status == 'doc_rejected') {
-            DB::table('du_transactions')->where('id', $id)->update([
-                'status' => 'pending_docs',
-                'updated_at' => now(),
-            ]);
+            $transaction->update(['status' => 'pending_docs']);
 
-            $url = route('du.transactions.index');
-            PaymentReceived::dispatch(
-                $transaction,
-                "{$student->name} Sudah Memperbaiki Dokumennya. Silahkan di cek kembali",
-                'info'
-            );
+            PaymentReceived::dispatch($transaction, "{$student->name} memperbaiki dokumen.", 'info');
 
-            return redirect()->route('student.dashboard')->with('success', 'Dokumen perbaikan berhasil dikirim! Mohon tunggu verifikasi.');
+            return redirect()->route('student.dashboard')->with('success', 'Dokumen perbaikan dikirim!');
+
         } elseif ($transaction->status == 'payment_rejected') {
-            DB::table('du_transactions')->where('id', $id)->update([
-                'status' => 'payment_review',
-                'updated_at' => now(),
-            ]);
+            $transaction->update(['status' => 'payment_review']);
 
-            return redirect()->route('student.dashboard')->with('success', 'Bukti pembayaran berhasil dikirim ulang!');
+            return redirect()->route('student.dashboard')->with('success', 'Bukti pembayaran dikirim ulang!');
         }
 
         return back();
@@ -354,16 +297,9 @@ class StudentDashboardController extends Controller
     public function history()
     {
         $student = Auth::guard('student')->user();
-
-        $transactions = DB::table('du_transactions')
-            ->join('du_bills', 'du_transactions.du_bill_id', '=', 'du_bills.id')
-            ->select(
-                'du_transactions.*',
-                'du_bills.title as bill_title',
-                'du_bills.amount as bill_amount'
-            )
-            ->where('du_transactions.student_id', $student->id)
-            ->orderBy('du_transactions.updated_at', 'desc')
+        $transactions = DuTransaction::with('bill')
+            ->where('student_id', $student->id)
+            ->latest('updated_at')
             ->get();
 
         return view('DaftarUlang::students.history', compact('transactions'));
@@ -372,14 +308,13 @@ class StudentDashboardController extends Controller
     public function invoice($id)
     {
         $student = Auth::guard('student')->user();
+        $bill = Bill::findOrFail($id);
 
-        $bill = DB::table('du_bills')->where('id', $id)->first();
-
-        $transaction = DB::table('du_transactions')
-            ->where('student_id', $student->id)
+        $transaction = DuTransaction::where('student_id', $student->id)
             ->where('du_bill_id', $id)
             ->where('status', 'paid')
             ->first();
+
         if (! $transaction) {
             return redirect()->route('student.bills.show', $id)->with('error', 'Tagihan belum lunas.');
         }

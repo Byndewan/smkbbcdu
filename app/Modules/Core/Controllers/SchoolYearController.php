@@ -3,6 +3,7 @@
 namespace App\Modules\Core\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\SchoolYear;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Traits\ApiResponse;
@@ -14,8 +15,7 @@ class SchoolYearController extends Controller
     public function index()
     {
         if (request()->ajax()) {
-            $data = DB::table('core_school_years')->orderBy('code', 'desc');
-
+            $data = SchoolYear::query()->orderBy('code', 'desc');
             return datatables()->of($data)
                 ->addIndexColumn()
                 ->addColumn('status', function($row){
@@ -55,11 +55,10 @@ class SchoolYearController extends Controller
             'name' => 'required',
         ]);
 
-        DB::table('core_school_years')->insert([
+        SchoolYear::create([
             'code' => $request->code,
             'name' => $request->name,
             'is_active' => false,
-            'created_at' => now()
         ]);
 
         return $this->success(null, 'Tahun ajaran berhasil ditambahkan!');
@@ -67,7 +66,7 @@ class SchoolYearController extends Controller
 
     public function edit($id)
     {
-        $data = DB::table('core_school_years')->where('id', $id)->first();
+        $data = SchoolYear::findOrFail($id);
         return view('Core::school_years.form', compact('data'));
     }
 
@@ -78,10 +77,10 @@ class SchoolYearController extends Controller
             'name' => 'required',
         ]);
 
-        DB::table('core_school_years')->where('id', $id)->update([
+        $year = SchoolYear::findOrFail($id);
+        $year->update([
             'code' => $request->code,
             'name' => $request->name,
-            'updated_at' => now()
         ]);
 
         return $this->success(null, 'Data berhasil diperbarui!');
@@ -89,18 +88,40 @@ class SchoolYearController extends Controller
 
     public function destroy($id)
     {
-        $isUsed = DB::table('core_students')->where('school_year_id', $id)->exists();
-        if($isUsed) return $this->error('Gagal! Data sedang digunakan oleh siswa.', 422);
+        $year = SchoolYear::findOrFail($id);
+        $isUsed = DB::table('core_students')
+            ->where('school_year_id', $id)
+            ->whereNull('deleted_at')
+            ->exists();
 
-        DB::table('core_school_years')->where('id', $id)->delete();
-        return $this->success(null, 'Data berhasil dihapus!');
+        if($isUsed) {
+            return $this->error('Gagal! Data sedang digunakan oleh siswa.', 422);
+        }
+
+        $year->delete();
+
+        return $this->success(null, 'Data berhasil dihapus (Soft Delete)!');
     }
 
     public function activate($id)
     {
-        DB::table('core_school_years')->update(['is_active' => false]);
-        DB::table('core_school_years')->where('id', $id)->update(['is_active' => true]);
+        try {
+            DB::beginTransaction();
+            SchoolYear::query()->update(['is_active' => false]);
+            $year = SchoolYear::findOrFail($id);
+            $year->update(['is_active' => true]);
 
-        return $this->success(null, 'Tahun ajaran aktif berhasil diubah!');
+            activity()
+                ->performedOn($year)
+                ->causedBy(auth('web')->user())
+                ->log('Mengaktifkan Tahun Ajaran: ' . $year->name);
+
+            DB::commit();
+            return $this->success(null, 'Tahun ajaran aktif berhasil diubah!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->error(null, 'Gagal mengaktifkan: ' . $e->getMessage());
+        }
     }
 }

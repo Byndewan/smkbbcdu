@@ -5,30 +5,33 @@ namespace App\Modules\Core\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Major;
 use App\Models\User;
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
+    use ApiResponse;
+
     public function index(Request $request)
     {
         if ($request->ajax()) {
             $data = User::with(['roles', 'major'])
-                ->select('users.*')
-                ->where('users.id', '!=', 1)
+                ->where('id', '!=', 1)
                 ->latest()
                 ->get();
 
             return datatables()->of($data)
                 ->addIndexColumn()
                 ->addColumn('role', function ($row) {
-                    return $row->roles->first() ? '<span class="badge bg-info">'.$row->roles->first()->name.'</span>' : '-';
+                    return $row->roles->first()
+                        ? '<span class="badge bg-info">'.$row->roles->first()->name.'</span>'
+                        : '-';
                 })
                 ->addColumn('major', function ($row) {
-                    return $row->major ? $row->major->name : '<span class="badge bg-success">Semua Jurusan</span>';
+                    return $row->major
+                        ? $row->major->name
+                        : '<span class="badge bg-success">Semua Jurusan</span>';
                 })
                 ->addColumn('action', function ($row) {
                     $editUrl = route('core.users.edit', $row->id);
@@ -49,9 +52,8 @@ class UserController extends Controller
     {
         $roles = Role::where('name', '!=', 'SuperAdmin')->get();
         $majors = Major::all();
-        $user = new User;
 
-        return view('Core::users.form', compact('roles', 'majors', 'user'));
+        return view('Core::users.form', compact('roles', 'majors'));
     }
 
     public function store(Request $request)
@@ -64,10 +66,8 @@ class UserController extends Controller
             'major_id' => 'nullable|required_if:is_operator,1|exists:core_majors,id',
         ]);
 
-        DB::beginTransaction();
         try {
             $isOperator = $request->has('is_operator') ? true : false;
-
             $data = [
                 'name' => $request->name,
                 'email' => $request->email,
@@ -76,32 +76,22 @@ class UserController extends Controller
             ];
 
             if ($request->password) {
-                $data['password'] = Hash::make($request->password);
+                $data['password'] = $request->password;
             }
 
             $user = User::updateOrCreate(['id' => $request->id], $data);
             $user->syncRoles([$request->role]);
 
-            activity()
-                ->performedOn($user)
-                ->causedBy(Auth::user())
-                ->withProperties(['is_operator' => $isOperator, 'major_id' => $data['major_id']])
-                ->log($request->id ? 'User diupdate' : 'User baru dibuat');
-
-            DB::commit();
-
-            return response()->json(['message' => 'User berhasil disimpan!']);
+            return $this->success(null, 'User berhasil disimpan!');
 
         } catch (\Exception $e) {
-            DB::rollBack();
-
-            return response()->json(['message' => $e->getMessage()], 500);
+            return $this->error('Gagal: '.$e->getMessage(), 500);
         }
     }
 
     public function edit($id)
     {
-        $user = User::find($id);
+        $user = User::findOrFail($id);
         $roles = Role::where('name', '!=', 'SuperAdmin')->get();
         $majors = Major::all();
 
@@ -110,9 +100,13 @@ class UserController extends Controller
 
     public function destroy($id)
     {
-        $user = User::find($id);
+        $user = User::findOrFail($id);
+        if ($user->id == 1) {
+            return $this->error(null, 'SuperAdmin tidak boleh dihapus!');
+        }
+
         $user->delete();
 
-        return response()->json(['message' => 'User berhasil dihapus!']);
+        return $this->success(null, 'User berhasil dihapus!');
     }
 }

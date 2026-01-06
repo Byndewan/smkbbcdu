@@ -17,10 +17,11 @@ class FixStudentRoleSeeder extends Seeder
 
         Student::doesntHave('roles')->chunk(1000, function ($students) use ($roleSiswa) {
             $dataToInsert = [];
+
             foreach ($students as $student) {
                 $dataToInsert[] = [
                     'role_id' => $roleSiswa->id,
-                    'model_type' => 'App\Models\Student',
+                    'model_type' => Student::class,
                     'model_id' => $student->id,
                 ];
             }

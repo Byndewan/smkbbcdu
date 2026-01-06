@@ -3,8 +3,9 @@
 namespace App\Modules\Core\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\SchoolClass;
+use App\Models\Major;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use App\Traits\ApiResponse;
 
 class ClassController extends Controller
@@ -14,19 +15,21 @@ class ClassController extends Controller
     public function index()
     {
         if (request()->ajax()) {
-            $data = DB::table('core_classes')
-                ->join('core_majors', 'core_classes.major_id', '=', 'core_majors.id')
-                ->select('core_classes.*', 'core_majors.abbreviation as major_abb')
-                ->restrictMajor('core_majors.id')
-                ->orderBy('core_classes.code', 'asc');
+            $data = SchoolClass::with('major')
+                ->restricted()
+                ->orderBy('code', 'asc');
 
             return datatables()->of($data)
                 ->addIndexColumn()
+                ->addColumn('major_abb', function($row){
+                    return $row->major ? $row->major->abbreviation : '-';
+                })
                 ->addColumn('action', function($row){
                     $editBtn = '<button data-url="'.route('core.classes.edit', $row->id).'" class="btn btn-sm btn-warning btn-modal text-white me-1"><i class="bi bi-pencil"></i></button>';
                     $delBtn = '<button data-url="'.route('core.classes.destroy', $row->id).'" data-name="'.$row->name.'" class="btn btn-sm btn-danger btn-delete"><i class="bi bi-trash"></i></button>';
                     return $editBtn . $delBtn;
                 })
+                ->rawColumns(['action'])
                 ->make(true);
         }
 
@@ -35,7 +38,7 @@ class ClassController extends Controller
 
     public function create()
     {
-        $majors = DB::table('core_majors')->orderBy('name')->get();
+        $majors = Major::restricted()->orderBy('name')->get();
         return view('Core::classes.form', compact('majors'));
     }
 
@@ -47,11 +50,10 @@ class ClassController extends Controller
             'major_id' => 'required|exists:core_majors,id'
         ]);
 
-        DB::table('core_classes')->insert([
+        SchoolClass::create([
             'code' => $request->code,
             'name' => $request->name,
             'major_id' => $request->major_id,
-            'created_at' => now()
         ]);
 
         return $this->success(null, 'Kelas berhasil ditambahkan!');
@@ -59,8 +61,9 @@ class ClassController extends Controller
 
     public function edit($id)
     {
-        $data = DB::table('core_classes')->where('id', $id)->first();
-        $majors = DB::table('core_majors')->orderBy('name')->get();
+        $data = SchoolClass::findOrFail($id);
+        $majors = Major::restricted()->orderBy('name')->get();
+
         return view('Core::classes.form', compact('data', 'majors'));
     }
 
@@ -72,11 +75,12 @@ class ClassController extends Controller
             'major_id' => 'required|exists:core_majors,id'
         ]);
 
-        DB::table('core_classes')->where('id', $id)->update([
+        $class = SchoolClass::findOrFail($id);
+
+        $class->update([
             'code' => $request->code,
             'name' => $request->name,
             'major_id' => $request->major_id,
-            'updated_at' => now()
         ]);
 
         return $this->success(null, 'Data berhasil diperbarui!');
@@ -84,10 +88,14 @@ class ClassController extends Controller
 
     public function destroy($id)
     {
-        $isUsed = DB::table('core_students')->where('current_class_id', $id)->exists();
-        if($isUsed) return $this->error('Gagal! Kelas masih ada siswanya.', 422);
+        $class = SchoolClass::findOrFail($id);
 
-        DB::table('core_classes')->where('id', $id)->delete();
+        if($class->students()->exists()) {
+            return $this->error('Gagal! Kelas masih ada siswanya.', 422);
+        }
+
+        $class->delete();
+
         return $this->success(null, 'Data berhasil dihapus!');
     }
 }

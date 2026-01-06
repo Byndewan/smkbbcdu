@@ -36,7 +36,7 @@
                     <h5 class="modal-title">Import Data Siswa</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form action="{{ route('core.students.import') }}" method="POST" enctype="multipart/form-data"
+                <formus action="{{ route('core.students.import') }}" method="POST" enctype="multipart/form-data"
                     class="form-ajax">
                     @csrf
                     <div class="modal-body">

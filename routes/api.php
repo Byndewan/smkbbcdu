@@ -1,11 +1,10 @@
 <?php
 
-use App\Http\Controllers\Api\PaymentCallbackController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\PaymentCallbackController;
 
 Route::post('payment/callback', [PaymentCallbackController::class, 'handle']);
 
-
-Route::get('/test-callback', function () {
-    return 'API OK';
+Route::get('testing', function ($id) {
+    return 'TESTING OKE';
 });

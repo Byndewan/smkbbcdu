@@ -2,57 +2,64 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Spatie\Activitylog\LogOptions;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Notifications\Notifiable;
 
 class Student extends Authenticatable
 {
-    use HasRoles, LogsActivity, Notifiable, SoftDeletes;
-
-    protected $guard = 'student';
+    use SoftDeletes, LogsActivity, HasRoles, Notifiable;
 
     protected $table = 'core_students';
-
     protected $guarded = ['id'];
+    protected $guard_name = 'student';
 
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'is_profile_completed' => 'boolean',
+    ];
+
+    public function class()
+    {
+        return $this->belongsTo(SchoolClass::class, 'current_class_id');
+    }
+
     public function major()
     {
-        return $this->belongsTo(Major::class, 'major_id', 'id');
+        return $this->belongsTo(Major::class, 'major_id');
     }
 
-    public function currentClass()
+    public function schoolYear()
     {
-        return $this->belongsTo(CoreClass::class, 'current_class_id', 'id');
+        return $this->belongsTo(SchoolYear::class, 'school_year_id');
     }
 
-    public function prevClass()
+    public function scopeRestricted(Builder $query)
     {
-        return $this->belongsTo(CoreClass::class, 'prev_class_id', 'id');
+        if (Auth::guard('web')->check() && Auth::user()->is_operator && Auth::user()->major_id) {
+            return $query->where('major_id', Auth::user()->major_id);
+        }
+        return $query;
     }
 
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly([
-                'nipd',
-                'name',
-                'email',
-                'phone',
-                'current_class_id',
-                'is_active',
-                'is_graduated',
-            ])
+            ->logAll()
             ->logOnlyDirty()
-            ->dontSubmitEmptyLogs()
-            ->setDescriptionForEvent(fn (string $eventName) => "Data Siswa ini telah di-{$eventName}");
+            ->dontLogIfAttributesChangedOnly(['remember_token', 'password'])
+            ->useLogName('master-data')
+            ->setDescriptionForEvent(fn(string $eventName) => "Data Siswa {$this->name} telah di-{$eventName}");
     }
 }
