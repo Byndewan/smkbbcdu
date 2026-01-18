@@ -24,12 +24,12 @@ class SchoolYearController extends Controller
                         : '<span class="badge bg-secondary">Tidak Aktif</span>';
                 })
                 ->addColumn('action', function($row){
-                    $editBtn = '<button data-url="'.route('core.school-years.edit', $row->id).'" class="btn btn-sm btn-warning btn-modal text-white me-1" title="Edit"><i class="bi bi-pencil"></i></button>';
-                    $delBtn = '<button data-url="'.route('core.school-years.destroy', $row->id).'" data-name="'.$row->name.'" class="btn btn-sm btn-danger btn-delete" title="Hapus"><i class="bi bi-trash"></i></button>';
+                    $editBtn = '<button data-url="'.route('admin.core.school-years.edit', $row->id).'" class="btn btn-sm btn-warning btn-modal text-white me-1" title="Edit"><i class="bi bi-pencil"></i></button>';
+                    $delBtn = '<button data-url="'.route('admin.core.school-years.destroy', $row->id).'" data-name="'.$row->name.'" class="btn btn-sm btn-danger btn-delete" title="Hapus"><i class="bi bi-trash"></i></button>';
 
                     $activeBtn = '';
                     if(!$row->is_active){
-                        $activeBtn = '<form action="'.route('core.school-years.activate', $row->id).'" method="POST" class="d-inline form-ajax">
+                        $activeBtn = '<form action="'.route('admin.core.school-years.activate', $row->id).'" method="POST" class="d-inline form-ajax">
                             '.csrf_field().' <button type="submit" class="btn btn-sm btn-success text-white me-1" title="Set Aktif"><i class="bi bi-check-lg"></i></button>
                         </form>';
                     }
@@ -107,7 +107,7 @@ class SchoolYearController extends Controller
     {
         try {
             DB::beginTransaction();
-            SchoolYear::query()->update(['is_active' => false]);
+            // SchoolYear::query()->update(['is_active' => false]);
             $year = SchoolYear::findOrFail($id);
             $year->update(['is_active' => true]);
 
@@ -117,7 +117,7 @@ class SchoolYearController extends Controller
                 ->log('Mengaktifkan Tahun Ajaran: ' . $year->name);
 
             DB::commit();
-            return $this->success(null, 'Tahun ajaran aktif berhasil diubah!');
+            return $this->success(null, 'Tahun ajaran berhasil diaktifkan!');
 
         } catch (\Exception $e) {
             DB::rollBack();

@@ -21,12 +21,11 @@ class AuthController extends Controller
         ]);
 
         $credentials = $request->only('email', 'password');
-        $remember = $request->has('remember');
-        if (Auth::guard('web')->attempt($credentials, $remember)) {
+        if (Auth::guard('web')->attempt($credentials)) {
             $request->session()->regenerate();
-            return redirect()->intended(route('landing'));
+            return redirect()->intended(route('admin.landing'));
         }
-        if (Auth::guard('student')->attempt($credentials, $remember)) {
+        if (Auth::guard('student')->attempt($credentials)) {
             $request->session()->regenerate();
             return redirect()->intended(route('student.dashboard'));
         }

@@ -14,8 +14,8 @@ class StudentImport implements ToModel, WithBatchInserts, WithChunkReading, With
 {
     public function model(array $row)
     {
-        if(!isset($row['kode_kelas_baru']) || !isset($row['nipd'])) {
-             return null;
+        if (!isset($row['kode_kelas_baru']) || !isset($row['nipd'])) {
+            return null;
         }
 
         $newClass = DB::table('core_classes')->where('code', $row['kode_kelas_baru'])->first();
@@ -25,11 +25,13 @@ class StudentImport implements ToModel, WithBatchInserts, WithChunkReading, With
         if (!$newClass) throw new Exception("Kelas Baru '{$row['kode_kelas_baru']}' tidak ditemukan!");
         if (!$major) throw new Exception("Jurusan '{$row['kode_jurusan']}' tidak ditemukan!");
         if (!$year) throw new Exception("Tahun Ajaran '{$row['kode_tahun_ajaran']}' tidak ditemukan!");
+        $gender = strtoupper(trim($row['jenis_kelamin']));
         return new Student([
             'nipd'             => $row['nipd'],
             'name'             => $row['nama_siswa'],
-            'email'            => $row['nipd'].'@siswa.bbc',
-            'gender'           => $row['jenis_kelamin'] == 'L' ? 'L' : 'P',
+            'email'            => $row['nipd'] . '@siswa.bbc',
+            'photo_path'       => 'defaults/' . strtolower($gender) . '.svg',
+            'gender'           => in_array($gender, ['L', 'P']) ? $gender : null,
             'pob'              => $row['tempat_lahir'] ?? null,
             'dob'              => $row['tanggal_lahir'],
             'current_class_id' => $newClass->id,

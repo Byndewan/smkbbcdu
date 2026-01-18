@@ -3,11 +3,14 @@
 namespace App\Modules\DaftarUlang\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Mail\TransactionRejected;
 use App\Models\DuTransaction;
 use App\Models\DuTransactionFile;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class TransactionController extends Controller
 {
@@ -25,14 +28,15 @@ class TransactionController extends Controller
 
             return datatables()->of($data)
                 ->addIndexColumn()
-                ->editColumn('total_amount', fn ($row) => 'Rp '.number_format($row->total_amount, 0, ',', '.'))
+                ->addColumn('bill_title', fn($row) => $row->bill->title ?? '-')
+                ->editColumn('total_amount', fn($row) => 'Rp ' . number_format($row->total_amount, 0, ',', '.'))
                 ->addColumn('student_info', function ($row) {
                     $className = $row->student && $row->student->class ? $row->student->class->name : '-';
 
-                    return '<strong>'.$row->student->name.'</strong><br><small class="text-muted">'.$row->student->nipd.' - '.$className.'</small>';
+                    return '<strong>' . $row->student->name . '</strong><br><small class="text-muted">' . $row->student->nipd . ' - ' . $className . '</small>';
                 })
                 ->addColumn('action', function ($row) use ($status) {
-                    $url = route('du.transactions.verification', $row->id);
+                    $url = route('admin.du.transactions.verification', $row->id);
                     return $this->getActionButtons($status, $url);
                 })
                 ->rawColumns(['student_info', 'action'])
@@ -68,7 +72,7 @@ class TransactionController extends Controller
 
         try {
             DB::beginTransaction();
-            $transaction = DuTransaction::findOrFail($id);
+            $transaction = DuTransaction::with(['student', 'bill'])->findOrFail($id);
             if ($request->has('files')) {
                 foreach ($request->input('files') as $fileId => $data) {
                     $status = $data['status'];
@@ -83,12 +87,40 @@ class TransactionController extends Controller
                     }
                 }
             }
-            if ($request->verdict == 'valid') {
-                $newStatus = 'payment_review';
-                $note = 'Dokumen Valid. Data diteruskan ke Bagian Keuangan.';
-            } else {
-                $newStatus = 'doc_rejected';
-                $note = $request->admin_note ?? 'Dokumen tidak lengkap. Mohon periksa kembali.';
+            $newStatus = $transaction->status;
+            $note = $request->admin_note;
+
+            if ($request->has('verdict')) {
+                if ($request->verdict == 'valid') {
+                    $newStatus = 'payment_review';
+                    $note = 'Dokumen Valid. Data diteruskan ke Bagian Keuangan.';
+                } else {
+                    $newStatus = 'doc_rejected';
+                    $note = $request->admin_note ?? 'Dokumen tidak lengkap. Mohon periksa kembali.';
+                    try {
+                        Mail::to($transaction->student->email)->send(
+                            new TransactionRejected($transaction, 'document', $note)
+                        );
+                    } catch (\Exception $e) {
+                        Log::error("Gagal kirim email dokumen: " . $e->getMessage());
+                    }
+                }
+            }
+            if ($request->has('payment_status')) {
+                if ($request->payment_status == 'valid') {
+                    $newStatus = 'paid';
+                    $note = 'Pembayaran Lunas via Admin Verification.';
+                } else {
+                    $newStatus = 'payment_rejected';
+                    $note = $request->admin_note ?? 'Bukti pembayaran tidak valid.';
+                    try {
+                        Mail::to($transaction->student->email)->send(
+                            new TransactionRejected($transaction, 'payment', $note)
+                        );
+                    } catch (\Exception $e) {
+                        Log::error("Gagal kirim email payment: " . $e->getMessage());
+                    }
+                }
             }
             $transaction->update([
                 'status' => $newStatus,
@@ -100,7 +132,6 @@ class TransactionController extends Controller
                 'message' => ($newStatus == 'payment_review') ? 'Verifikasi Berhasil! Lanjut ke Keuangan.' : 'Verifikasi Berhasil! Dikembalikan ke Siswa.',
                 'new_status' => $newStatus,
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -113,15 +144,15 @@ class TransactionController extends Controller
         $jsPopup = "const w = 1500; const h = 900;const left = (screen.width - w) / 2;const top = (screen.height - h) / 2;window.open('$url', 'VerifikasiWindow',`width=\${w},height=\${h},left=\${left},top=\${top},resizable=yes,scrollbars=yes`)";
 
         if ($status === 'paid') {
-            return '<button onclick="'.$jsPopup.'" class="btn btn-sm btn-secondary text-white shadow-sm"><i class="bi bi-exclamation-circle-fill me-1"></i> Detail</button>';
+            return '<button onclick="' . $jsPopup . '" class="btn btn-sm btn-secondary text-white shadow-sm"><i class="bi bi-exclamation-circle-fill me-1"></i> Detail</button>';
         }
         if ($status === 'payment_review') {
             return '<span class="btn btn-sm btn-secondary text-white shadow-sm"><i class="bi bi-exclamation-circle-fill me-1"></i>Menunggu Review Keuangan</span>';
         }
         if ($status === 'doc_rejected') {
-            return '<button onclick="'.$jsPopup.'" class="btn btn-sm btn-danger text-white shadow-sm"><i class="bi bi-exclamation-circle-fill me-1"></i> Klik Jika Salah Verifikasi!</button>';
+            return '<button onclick="' . $jsPopup . '" class="btn btn-sm btn-danger text-white shadow-sm"><i class="bi bi-exclamation-circle-fill me-1"></i> Klik Jika Salah Verifikasi!</button>';
         }
 
-        return '<button onclick="'.$jsPopup.'" class="btn btn-sm btn-primary text-white shadow-sm"><i class="bi bi-box-arrow-up-right me-1"></i> Verifikasi</button>';
+        return '<button onclick="' . $jsPopup . '" class="btn btn-sm btn-primary text-white shadow-sm"><i class="bi bi-box-arrow-up-right me-1"></i> Verifikasi</button>';
     }
 }

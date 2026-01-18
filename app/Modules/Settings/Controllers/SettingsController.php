@@ -101,7 +101,7 @@ class SettingsController extends Controller
         return '
             <div class="btn-group btn-group-sm gap-1">
                 <button type="button" class="btn btn-warning text-white btn-edit" data-type="'.$type.'" data-row="'.$jsonData.'"><i class="bi bi-pencil"></i></button>
-                <button type="button" class="btn btn-danger btn-delete" data-url="'.route('settings.front.'.$type.'.destroy', $row->id).'"><i class="bi bi-trash"></i></button>
+                <button type="button" class="btn btn-danger btn-delete" data-url="'.route('admin.settings.front.'.$type.'.destroy', $row->id).'"><i class="bi bi-trash"></i></button>
             </div>';
     }
 

@@ -5,17 +5,13 @@
 @section('content')
     <div class="container-fluid">
 
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h4 class="fw-bold text-dark mb-1">Dashboard Pemasukan</h4>
-                <p class="text-muted small mb-0">Monitor real-time pembayaran.</p>
-            </div>
+        {{-- <div class="d-flex justify-content-end align-items-center mb-4">
             <div>
                 <button class="btn btn-outline-primary btn-sm" onclick="window.location.reload()">
                     <i class="bi bi-arrow-clockwise"></i> Refresh Data
                 </button>
             </div>
-        </div>
+        </div> --}}
 
         <div class="row mb-4">
             <div class="col-md-6 col-lg-4 mb-3">
@@ -51,15 +47,15 @@
             </div>
 
             <div class="col-md-12 col-lg-4 mb-3">
-                <div class="card border-0 shadow-sm h-100 bg-white">
+                <div class="card border-0 shadow-sm h-100 ">
                     <div class="card-body d-flex align-items-center">
                         <div>
-                            <h6 class="fw-bold text-dark">Status Sistem</h6>
+                            <h6 class="fw-bold ">Status Sistem</h6>
                             <p class="text-muted small mb-0">
                                 Semua transaksi pending akan muncul notifikasi di sidebar. Pastikan rutin melakukan
                                 verifikasi.
                             </p>
-                            <a href="{{ route('du.transactions.index') }}" class="btn btn-sm btn-primary mt-2">Cek
+                            <a href="{{ route('admin.du.transactions.index') }}" class="btn btn-sm btn-primary mt-2">Cek
                                 Transaksi</a>
                         </div>
                     </div>
@@ -68,14 +64,14 @@
         </div>
 
         <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3">
+            <div class="card-header  py-3">
                 <h6 class="fw-bold m-0"><i class="bi bi-bar-chart-line-fill me-2 text-primary"></i>Rincian Pemasukan per
                     Jurusan & Tingkat</h6>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light text-secondary small text-uppercase">
+                        <thead class=" text-secondary small text-uppercase">
                             <tr>
                                 <th class="ps-4">Jurusan</th>
                                 <th>Tingkat</th>
@@ -87,13 +83,13 @@
                         <tbody>
                             @forelse($breakdowns as $row)
                                 <tr>
-                                    <td class="ps-4 fw-bold text-dark">{{ $row->major_name }}</td>
+                                    <td class="ps-4 fw-bold ">{{ $row->major_name }}</td>
                                     <td>
                                         @if ($row->current_grade == 10)
-                                            <span class="badge bg-info text-dark">Kls 10 <i
+                                            <span class="badge bg-info ">Kls 10 <i
                                                     class="bi bi-arrow-right-short"></i> 11</span>
                                         @elseif($row->current_grade == 11)
-                                            <span class="badge bg-warning text-dark">Kls 11 <i
+                                            <span class="badge bg-warning ">Kls 11 <i
                                                     class="bi bi-arrow-right-short"></i> 12</span>
                                         @else
                                             <span class="badge bg-secondary">Kelas {{ $row->current_grade }}</span>
@@ -127,7 +123,7 @@
                                 </tr>
                             @endforelse
                         </tbody>
-                        <tfoot class="bg-light fw-bold">
+                        <tfoot class=" fw-bold">
                             <tr>
                                 <td colspan="4" class="text-end text-uppercase small">Total Pemasukan:</td>
                                 <td class="text-end pe-4 text-primary">Rp {{ number_format($grandTotal, 0, ',', '.') }}

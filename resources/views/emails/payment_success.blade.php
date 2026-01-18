@@ -2,138 +2,138 @@
 <html>
 
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pembayaran Berhasil</title>
     <style>
         body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            background-color: #f4f4f4;
+            background-color: #f6f9fc;
             margin: 0;
-            padding: 0;
+            padding: 40px 0;
         }
 
         .container {
             max-width: 600px;
             margin: 0 auto;
-            background-color: #ffffff;
-            border-radius: 8px;
+            background: #ffffff;
+            border-radius: 16px;
             overflow: hidden;
-            margin-top: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
         }
 
         .header {
-            background-color: #0d6efd;
-            color: #ffffff;
-            padding: 30px 20px;
+            background: #be123c;
+            padding: 40px;
             text-align: center;
         }
 
+        .header h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 24px;
+            font-weight: 800;
+        }
+
         .content {
-            padding: 30px 20px;
-            color: #333333;
+            padding: 40px;
+            color: #334155;
             line-height: 1.6;
         }
 
-        .table-info {
+        .amount-box {
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .amount {
+            font-size: 32px;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 5px 0;
+        }
+
+        .details table {
             width: 100%;
-            margin-top: 20px;
-            margin-bottom: 20px;
-            border-collapse: collapse;
+            font-size: 14px;
         }
 
-        .table-info td {
-            padding: 10px 0;
-            border-bottom: 1px solid #eeeeee;
+        .details td {
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
         }
 
-        .table-info td:last-child {
-            text-align: right;
-            font-weight: bold;
-        }
-
-        .total-row td {
-            border-top: 2px solid #333;
-            border-bottom: none;
-            font-size: 18px;
-            color: #0d6efd;
-            padding-top: 15px;
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #94a3b8;
+            font-size: 12px;
+            background: #f8fafc;
         }
 
         .btn {
             display: inline-block;
-            background-color: #0d6efd;
-            color: #ffffff;
+            background: #be123c;
+            color: #fff;
             text-decoration: none;
-            padding: 12px 25px;
-            border-radius: 5px;
+            padding: 12px 30px;
+            border-radius: 50px;
             font-weight: bold;
             margin-top: 20px;
-        }
-
-        .footer {
-            background-color: #f8f9fa;
-            padding: 20px;
-            text-align: center;
-            font-size: 12px;
-            color: #888888;
         }
     </style>
 </head>
 
 <body>
-
     <div class="container">
         <div class="header">
-            <h1 style="margin:0; font-size: 24px;">Pembayaran Diterima! 🎉</h1>
-            <p style="margin:5px 0 0; opacity: 0.9;">Terima kasih telah melakukan pembayaran.</p>
+            <h1>Pembayaran Berhasil! 🎉</h1>
         </div>
-
         <div class="content">
-            <p>Hai, <strong>{{ $transaction->student->name ?? 'Siswa' }}</strong> 👋</p>
-            <p>Pembayaran kamu telah kami terima dan terverifikasi oleh sistem. Berikut adalah rincian transaksinya:</p>
+            <p>Halo <strong>{{ $transaction->student->name }}</strong>,</p>
+            <p>Terima kasih! Pembayaran kamu telah kami terima dan diverifikasi oleh sistem.</p>
 
-            <table class="table-info">
-                <tr>
-                    <td>No. Invoice</td>
-                    <td>#{{ $transaction->trx_code }}</td>
-                </tr>
-                <tr>
-                    <td>Tanggal</td>
-                    <td>{{ date('d M Y, H:i', strtotime($transaction->created_at)) }}</td>
-                </tr>
-                <tr>
-                    <td>Metode Bayar</td>
-                    <td>{{ strtoupper($transaction->payment_method ?? 'MANUAL') }}</td>
-                </tr>
-                <tr>
-                    <td>Status</td>
-                    <td style="color: green;">{{ strtoupper($transaction->status ?? '-') }}</td>
-                </tr>
+            <div class="amount-box">
+                <span style="font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: bold;">Total
+                    Dibayar</span>
+                <div class="amount">Rp {{ number_format($transaction->total_amount, 0, ',', '.') }}</div>
+                <div style="color: #22c55e; font-weight: bold; font-size: 14px;">✅ LUNAS</div>
+            </div>
 
-                <tr class="total-row">
-                    <td>Total Bayar</td>
-                    <td>Rp {{ number_format($transaction->total_amount, 0, ',', '.') }}</td>
-                </tr>
-            </table>
-
-            <p style="font-size: 13px; color: #666;">
-                *Mohon simpan email ini sebagai bukti pembayaran yang sah.
-            </p>
+            <div class="details">
+                <table cellspacing="0">
+                    <tr>
+                        <td style="color: #64748b;">No. Referensi</td>
+                        <td style="text-align: right; font-weight: bold;">{{ $transaction->trx_code }}</td>
+                    </tr>
+                    <tr>
+                        <td style="color: #64748b;">Tanggal</td>
+                        <td style="text-align: right; font-weight: bold;">
+                            {{ $transaction->updated_at->format('d M Y, H:i') }}</td>
+                    </tr>
+                    <tr>
+                        <td style="color: #64748b;">Metode</td>
+                        <td style="text-align: right; font-weight: bold;">{{ strtoupper($transaction->payment_method) }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="color: #64748b;">Tagihan</td>
+                        <td style="text-align: right; font-weight: bold;">{{ $transaction->bill->title }}</td>
+                    </tr>
+                </table>
+            </div>
 
             <div style="text-align: center;">
-                <a href="{{ route('student.history') }}" class="btn">Lihat Riwayat</a>
+                <a href="{{ route('student.bills.invoice', $transaction->du_bill_id) }}" class="btn">Lihat
+                    Kwitansi</a>
             </div>
         </div>
-
         <div class="footer">
-            <p>&copy; {{ date('Y') }} BBC Pay System. All rights reserved.</p>
-            <p>Sekolah BBC, Jl. Pendidikan No. 1, Kota Bandung</p>
+            &copy; {{ date('Y') }} SMK Budi Bakti Ciwidey. <br>
+            Email otomatis, mohon tidak membalas.
         </div>
     </div>
-
 </body>
 
 </html>

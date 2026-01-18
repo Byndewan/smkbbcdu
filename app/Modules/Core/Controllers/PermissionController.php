@@ -16,8 +16,8 @@ class PermissionController extends Controller
             return datatables()->of($data)
                 ->addIndexColumn()
                 ->addColumn('action', function ($row) {
-                    $editUrl = route('core.permissions.edit', $row->id);
-                    $deleteUrl = route('core.permissions.destroy', $row->id);
+                    $editUrl = route('admin.core.permissions.edit', $row->id);
+                    $deleteUrl = route('admin.core.permissions.destroy', $row->id);
                     $btn = '<button type="button" class="btn btn-sm btn-warning me-1 btn-modal" data-url="'.$editUrl.'"><i class="bi bi-pencil"></i></button>';
                     $btn .= '<button type="button" class="btn btn-sm btn-danger btn-delete" data-url="'.$deleteUrl.'" data-name="'.$row->name.'"><i class="bi bi-trash"></i></button>';
                     return $btn;

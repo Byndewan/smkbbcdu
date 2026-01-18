@@ -30,8 +30,8 @@ class RoleController extends Controller
                     })->implode(' ');
                 })
                 ->addColumn('action', function ($row) {
-                    $editUrl = route('core.roles.edit', $row->id);
-                    $deleteUrl = route('core.roles.destroy', $row->id);
+                    $editUrl = route('admin.core.roles.edit', $row->id);
+                    $deleteUrl = route('admin.core.roles.destroy', $row->id);
                     $btn = '<button type="button" class="btn btn-sm btn-warning me-1 btn-modal" data-url="'.$editUrl.'"><i class="bi bi-pencil"></i></button>';
                     $btn .= '<button type="button" class="btn btn-sm btn-danger btn-delete" data-url="'.$deleteUrl.'" data-name="'.$row->name.'"><i class="bi bi-trash"></i></button>';
                     return $btn;

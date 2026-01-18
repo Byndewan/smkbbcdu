@@ -1,3 +1,67 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --bbc-primary: oklab(55.91% 0.20543 0.09128);
+    --bbc-hex: #E63946;
+  }
+
+  body {
+    @apply bg-[#F2F4F8] text-slate-700 dark:bg-[#1a1c23] dark:text-slate-300 transition-colors duration-300 font-sans;
+  }
+}
+
+@layer components {
+  .clay-card {
+    @apply bg-[#F2F4F8] dark:bg-[#24262d] rounded-[2rem] border border-white/40 dark:border-white/5 relative overflow-hidden transition-all duration-300;
+    box-shadow:
+      8px 8px 16px #d1d9e6,
+      -8px -8px 16px #ffffff;
+  }
+
+  .dark .clay-card {
+    box-shadow:
+      8px 8px 16px #15161c,
+      -8px -8px 16px #2d3038;
+  }
+
+  .btn-clay {
+    @apply px-6 py-3 rounded-2xl font-bold text-white transition-all duration-200 transform active:scale-95 flex items-center justify-center gap-2 shadow-lg;
+    background-color: var(--bbc-hex);
+    background-color: var(--bbc-primary);
+    box-shadow:
+      inset 0 2px 4px rgba(255,255,255,0.3),
+      inset 0 -2px 4px rgba(0,0,0,0.1),
+      0 8px 15px rgba(230, 57, 70, 0.3);
+  }
+
+  .btn-clay:hover {
+    @apply -translate-y-1 brightness-110;
+    box-shadow:
+      inset 0 2px 4px rgba(255,255,255,0.4),
+      0 12px 20px rgba(230, 57, 70, 0.4);
+  }
+
+  .btn-clay-secondary {
+    @apply px-6 py-3 rounded-2xl font-bold text-slate-600 dark:text-slate-200 bg-[#F2F4F8] dark:bg-[#24262d] transition-all duration-200 transform active:scale-95 flex items-center justify-center gap-2;
+    box-shadow:
+      5px 5px 10px #d1d9e6,
+      -5px -5px 10px #ffffff;
+  }
+
+  .dark .btn-clay-secondary {
+    box-shadow:
+      5px 5px 10px #15161c,
+      -5px -5px 10px #2d3038;
+  }
+
+  .btn-clay-secondary:hover {
+    @apply text-[var(--bbc-hex)];
+  }
+
+  .badge-pill {
+    @apply px-4 py-1.5 rounded-full text-xs font-bold tracking-wide uppercase shadow-sm;
+  }
+}

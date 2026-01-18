@@ -1,1 +1,161 @@
+/*
+=========================================
+|THEME: Floating Layers (BBC Pay Admin) |
+|PRIMARY: oklab(55.91% 0.20543 0.09128) |
+|AUTHOR: abyandev657@gmail.com          |
+=========================================
+*/
+
 @import 'bootstrap/scss/bootstrap';
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --bbc-primary: oklab(55.91% 0.20543 0.09128);
+    --bbc-: #F7F9FC;
+    --bbc-bg-dark: #1a1c23;
+    --bbc-card-light: #ffffff;
+    --bbc-card-dark: #24262d;
+    --bbc-text-main: #2b3442;
+    --bbc-text-muted: #64748b;
+    --bbc-fw-bold: #2b3442;
+    --bbc-border-radius: 16px;
+    --bbc-shadow-soft: 0 10px 30px -5px rgba(0, 0, 0, 0.06);
+    --bbc-nav-link: #2b3442;
+    --bs-primary: oklab(55.91% 0.20543 0.09128);
+    --bs-primary-rgb: 220, 38, 38;
+    --bs-nav-pills-link-active-bg: var(--bs-primary);
+    --bs-nav-pills-link-active-color: #fff;
+}
+
+[data-bs-theme="dark"] {
+    --bs-body-bg: var(--bbc-bg-dark);
+    --bs-body-color: #e2e8f0 !important;
+    --bs-card-bg: var(--bbc-card-dark);
+    --bs-border-color: #33363f;
+    --bbc-fw-bold: #e2e8f0;
+    --bbc-nav-link: #fff;
+    --bs-nav-pills-link-active-bg: var(--bs-primary);
+    --bs-nav-pills-link-active-color: #fff;
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--bbc-text-main);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.fw-bold {
+    color: var(--bbc-fw-bold);
+}
+
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link {
+    background-color: var(--bbc-primary) !important;
+    color: #fff !important;
+}
+
+.card {
+    border: none !important;
+    border-radius: var(--bbc-border-radius);
+    background-color: var(--bs-card-bg, var(--bbc-card-light));
+    box-shadow: var(--bbc-shadow-soft);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    .card-header {
+        background-color: transparent;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        padding: 1.5rem;
+
+        [data-bs-theme="dark"] & {
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+    }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+}
+
+.card-module:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px -5px rgba(var(--bbc-primary), 0.15);
+}
+
+.btn-primary {
+    background-color: var(--bbc-primary) !important;
+    border-color: var(--bbc-primary) !important;
+    border-radius: 10px;
+    padding: 0.5rem 1.2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    font-weight: 600;
+
+    &:hover {
+        filter: brightness(1.1);
+        transform: translateY(-1px);
+    }
+}
+
+.sidebar {
+    background: var(--bs-card-bg, var(--bbc-card-light));
+    border-right: none;
+    box-shadow: var(--bbc-shadow-soft);
+    margin: 1rem;
+    margin-right: 0;
+    border-radius: var(--bbc-border-radius);
+    height: calc(100vh - 2rem);
+    z-index: 1000;
+
+    .nav-link {
+        border-radius: 10px;
+        margin-bottom: 5px;
+        color: var(--bbc-text-muted);
+        font-weight: 500;
+        transition: all 0.2s;
+
+        &:hover {
+            background-color: rgba(0,0,0,0.03);
+            color: var(--bbc-primary);
+            padding-left: 1.2rem;
+        }
+
+        &.active {
+            background-color: var(--bbc-primary) !important;
+            color: white !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        i {
+            font-size: 1.1rem;
+        }
+    }
+}
+
+.navbar {
+    background: transparent !important;
+    padding: 1rem 1.5rem;
+    border-bottom: none !important;
+}
+
+.table {
+    --bs-table-bg: transparent;
+
+    th {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        color: var(--bbc-text-muted);
+        border-bottom: 2px solid rgba(0,0,0,0.05);
+    }
+
+    td {
+        vertical-align: middle;
+        padding: 1rem 0.5rem;
+        border-bottom: 1px solid rgba(0,0,0,0.03);
+    }
+}
+
+.badge {
+    padding: 0.5em 0.8em;
+    border-radius: 8px;
+    font-weight: 600;
+}

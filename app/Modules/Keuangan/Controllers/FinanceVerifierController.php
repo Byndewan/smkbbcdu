@@ -33,6 +33,7 @@ class FinanceVerifierController extends Controller
 
                     return '<strong>'.$row->student->name.'</strong><br><small class="text-muted">'.$row->student->nipd.' - '.$className.'</small>';
                 })
+                ->addColumn('bill_title', fn ($row) => $row->bill->title ?? '-')
                 ->editColumn('total_amount', fn ($row) => '<span class="fw-bold text-success">Rp '.number_format($row->total_amount, 0, ',', '.').'</span>')
                 ->editColumn('payment_method', function ($row) {
                     $color = ($row->payment_method == 'manual') ? 'warning' : 'info';
@@ -41,7 +42,7 @@ class FinanceVerifierController extends Controller
                     return '<span class="badge bg-'.$color.' bg-opacity-10 text-'.$color.'">'.$label.'</span>';
                 })
                 ->addColumn('action', function ($row) use ($status) {
-                    $url = route('finance.transaction.verification', $row->id);
+                    $url = route('admin.finance.verification', $row->id);
                     return $this->getActionButtons($status, $url);
                 })
                 ->rawColumns(['trx_code', 'student_name', 'total_amount', 'payment_method', 'action'])

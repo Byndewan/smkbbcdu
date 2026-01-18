@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
@@ -13,7 +12,7 @@ use Illuminate\Notifications\Notifiable;
 
 class Student extends Authenticatable
 {
-    use SoftDeletes, LogsActivity, HasRoles, Notifiable;
+    use LogsActivity, HasRoles, Notifiable;
 
     protected $table = 'core_students';
     protected $guarded = ['id'];
@@ -61,5 +60,42 @@ class Student extends Authenticatable
             ->dontLogIfAttributesChangedOnly(['remember_token', 'password'])
             ->useLogName('master-data')
             ->setDescriptionForEvent(fn(string $eventName) => "Data Siswa {$this->name} telah di-{$eventName}");
+    }
+
+    protected static function booted()
+    {
+        static::created(function ($student) {
+            self::createBackup($student, 'create');
+        });
+        static::updated(function ($student) {
+            if ($student->wasChanged()) {
+                self::createBackup($student, 'update');
+            }
+        });
+    }
+
+    protected static function createBackup($student, $action)
+    {
+        $userId = Auth::guard('web')->id() ?? 0;
+
+        \App\Models\StudentBackup::create([
+            'student_id'       => $student->id,
+            'nipd'             => $student->nipd,
+            'name'             => $student->name,
+            'email'            => $student->email,
+            'phone'            => $student->phone,
+            'gender'           => $student->gender,
+            'pob'              => $student->pob,
+            'address'          => $student->address,
+            'dob'              => $student->dob,
+            'photo_path'       => $student->photo_path,
+            'current_class_id' => $student->current_class_id,
+            'prev_class_id'    => $student->prev_class_id,
+            'major_id'         => $student->major_id,
+            'school_year_id'   => $student->school_year_id,
+            'is_active'        => $student->is_active,
+            'trigger_action'   => $action,
+            'backup_by'        => $userId,
+        ]);
     }
 }

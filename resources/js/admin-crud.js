@@ -75,6 +75,8 @@ $(document).on("submit", ".form-ajax", function (e) {
             }
 
             Swal.fire({
+                toast: true,
+                position: 'top-end',
                 icon: "success",
                 title: "Berhasil!",
                 text: response.message || "Data berhasil disimpan.",

@@ -103,20 +103,23 @@ class StudentDashboardController extends Controller
                     'du_bill_id' => $request->bill_id,
                 ],
                 [
-                    'trx_code' => 'TRX-'.date('y').$student->nipd.'-'.strtoupper(Str::random(4)),
+                    'trx_code' => 'TRX-' . date('y') . $student->nipd . '-' . strtoupper(Str::random(4)),
                     'status' => 'draft',
                     'total_amount' => 0,
                 ]
             );
 
             $file = $request->file('file');
-            $filename = time().'_'.$file->getClientOriginalName();
-            $path = $file->storeAs('public/transactions/'.$student->id, $filename);
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $path = $file->storeAs('public/transactions/' . $student->id, $filename);
             $trxFile = $transaction->files()->where('du_bill_requirement_id', $request->req_id)->first();
+            $statusToSave = 'pending';
+            $reasonToSave = null;
 
-            $newRejectReason = null;
-            if ($trxFile && $trxFile->status == 'invalid' && ! empty($trxFile->reject_reason)) {
-                $newRejectReason = 'Revisi: '.$trxFile->reject_reason;
+            if ($trxFile && $trxFile->status == 'invalid') {
+                $statusToSave = 'invalid';
+                $cleanOldReason = str_replace('Untuk Dokumen Ini Sudah Diperbaiki Sesuai: ', '', $trxFile->reject_reason);
+                $reasonToSave = 'Untuk Dokumen Ini Sudah Diperbaiki Sesuai: ' . $cleanOldReason;
             }
 
             $transaction->files()->updateOrCreate(
@@ -125,8 +128,8 @@ class StudentDashboardController extends Controller
                     'file_path' => $path,
                     'file_name' => $filename,
                     'mime_type' => $file->getClientMimeType(),
-                    'status' => 'pending',
-                    'reject_reason' => $newRejectReason,
+                    'status' => $statusToSave,
+                    'reject_reason' => $reasonToSave,
                 ]
             );
 
@@ -134,11 +137,13 @@ class StudentDashboardController extends Controller
 
             DB::commit();
 
-            return response()->json(['status' => 'success', 'message' => 'File berhasil diupload!', 'file_url' => asset($publicUrl)]);
-
+            return response()->json([
+                'status' => 'success',
+                'message' => 'File berhasil diupload!',
+                'file_url' => asset($publicUrl)
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
-
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
@@ -206,8 +211,8 @@ class StudentDashboardController extends Controller
 
                 if ($request->hasFile('proof_file')) {
                     $file = $request->file('proof_file');
-                    $filename = 'BUKTI_'.time().'_'.$transaction->trx_code.'.'.$file->getClientOriginalExtension();
-                    $updateData['proof_path'] = $file->storeAs('public/payments/'.$student->id, $filename);
+                    $filename = 'BUKTI_' . time() . '_' . $transaction->trx_code . '.' . $file->getClientOriginalExtension();
+                    $updateData['proof_path'] = $file->storeAs('public/payments/' . $student->id, $filename);
                 }
 
                 $transaction->update($updateData);
@@ -229,7 +234,7 @@ class StudentDashboardController extends Controller
                 Config::$isSanitized = true;
                 Config::$is3ds = true;
 
-                $customOrderId = $transaction->trx_code.'-'.time();
+                $customOrderId = $transaction->trx_code . '-' . time();
 
                 $params = [
                     'payment_type' => 'bank_transfer',
@@ -265,7 +270,6 @@ class StudentDashboardController extends Controller
 
                 return redirect()->back()->with('success', 'Virtual Account Berhasil Dibuat!');
             }
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -276,19 +280,46 @@ class StudentDashboardController extends Controller
     public function resubmit(Request $request, $id)
     {
         $transaction = DuTransaction::findOrFail($id);
-        $student = $transaction->student;
+        $student = Auth::guard('student')->user();
 
         if ($transaction->status == 'doc_rejected') {
-            $transaction->update(['status' => 'pending_docs']);
+            $transaction->update([
+                'status' => 'pending_docs'
+            ]);
 
-            PaymentReceived::dispatch($transaction, "{$student->name} memperbaiki dokumen.", 'info');
-
-            return redirect()->route('student.dashboard')->with('success', 'Dokumen perbaikan dikirim!');
-
+            return redirect()->route('student.dashboard')->with('success', 'Dokumen perbaikan berhasil dikirim!');
         } elseif ($transaction->status == 'payment_rejected') {
-            $transaction->update(['status' => 'payment_review']);
+            $request->validate([
+                'payment_date' => 'required|date',
+                'bank_sender' => 'required|string',
+                'account_name' => 'required|string',
+                'account_number' => 'required|numeric',
+                'proof_file' => 'required|image|mimes:jpeg,png,jpg,pdf|max:2048',
+            ], [
+                'proof_file.required' => 'Anda wajib mengupload bukti transfer baru!',
+            ]);
 
-            return redirect()->route('student.dashboard')->with('success', 'Bukti pembayaran dikirim ulang!');
+            if ($request->hasFile('proof_file')) {
+                if ($transaction->proof_path && \Illuminate\Support\Facades\Storage::exists('public/' . $transaction->proof_path)) {
+                    \Illuminate\Support\Facades\Storage::delete('public/' . $transaction->proof_path);
+                }
+
+                $file = $request->file('proof_file');
+                $path = $file->store('transactions/' . $transaction->id, 'public');
+                $transaction->proof_path = $path;
+            }
+
+            $transaction->update([
+                'payment_date' => $request->payment_date,
+                'bank_sender' => $request->bank_sender,
+                'account_name' => $request->account_name,
+                'account_number' => $request->account_number,
+                'status' => 'payment_review'
+            ]);
+
+            PaymentReceived::dispatch($transaction, "{$student->name} mengirim ulang bukti bayar.", 'info');
+
+            return redirect()->route('student.dashboard')->with('success', 'Bukti pembayaran dan data berhasil diperbarui!');
         }
 
         return back();

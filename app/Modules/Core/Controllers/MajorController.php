@@ -20,8 +20,8 @@ class MajorController extends Controller
             return datatables()->of($data)
                 ->addIndexColumn()
                 ->addColumn('action', function ($row) {
-                    $editBtn = '<button data-url="' . route('core.majors.edit', $row->id) . '" class="btn btn-sm btn-warning btn-modal text-white me-1"><i class="bi bi-pencil"></i></button>';
-                    $delBtn = '<button data-url="' . route('core.majors.destroy', $row->id) . '" data-name="' . $row->name . '" class="btn btn-sm btn-danger btn-delete"><i class="bi bi-trash"></i></button>';
+                    $editBtn = '<button data-url="' . route('admin.core.majors.edit', $row->id) . '" class="btn btn-sm btn-warning btn-modal text-white me-1"><i class="bi bi-pencil"></i></button>';
+                    $delBtn = '<button data-url="' . route('admin.core.majors.destroy', $row->id) . '" data-name="' . $row->name . '" class="btn btn-sm btn-danger btn-delete"><i class="bi bi-trash"></i></button>';
                     return $editBtn . $delBtn;
                 })
                 ->rawColumns(['action'])

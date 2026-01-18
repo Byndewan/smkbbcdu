@@ -1,112 +1,96 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 
 <head>
-    <title>Login - BBC Pay</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.13.1/font/bootstrap-icons.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lengkapi Profil - BBC Pay</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap"
+        rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #F2F4F8;
+        }
+
+        .clay-card {
+            background: #F2F4F8;
+            border-radius: 2rem;
+            box-shadow: 8px 8px 16px #d1d9e6, -8px -8px 16px #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .btn-clay {
+            background: oklab(55.91% 0.20543 0.09128);
+            color: white;
+            box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.3), 0 8px 15px rgba(230, 57, 70, 0.3);
+            transition: all 0.2s;
+        }
+
+        .btn-clay:hover {
+            transform: translateY(-2px);
+        }
+    </style>
 </head>
 
-<body class="bg-light d-flex align-items-center justify-content-center" style="height: 100vh;">
-    <div class="container py-5">
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="card shadow-lg border-0 rounded-4">
-                    <div class="card-header bg-danger text-white text-center py-4 rounded-top-4">
-                        <h4 class="fw-bold mb-0"><i class="bi bi-shield-lock-fill me-2"></i>Keamanan Akun</h4>
-                        <p class="mb-0 small text-white-50">Mohon lengkapi data & ganti password untuk melanjutkan.</p>
-                    </div>
-                    <div class="card-body p-4">
+<body class="flex items-center justify-center min-h-screen p-4">
 
-                        @if ($errors->any())
-                            <div class="alert alert-danger small">
-                                <ul class="mb-0 ps-3">
-                                    @foreach ($errors->all() as $error)
-                                        <li>{{ $error }}</li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        @endif
+    <div class="clay-card w-full max-w-lg p-8 relative overflow-hidden">
 
-                        <form action="{{ route('student.profile.store') }}" method="POST">
-                            @csrf
-
-                            <div class="mb-3">
-                                <label class="form-label fw-bold small">Nama Lengkap</label>
-                                <input type="text" class="form-control bg-light" value="{{ $student->name }}"
-                                    readonly>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-bold small">Email Pribadi (Aktif)</label>
-                                <input type="email" id="emailInput" name="email" class="form-control" value=""
-                                    required placeholder="contoh: nama@gmail.com">
-                                <div id="emailError" class="form-text text-danger small d-none">
-                                    *Email tidak boleh menggunakan domain sekolah (@siswa.bbc)
-                                </div>
-                                <div class="form-text text-danger small">*Wajib ubah dari email default sekolah.</div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-bold small">Nomor WhatsApp</label>
-                                <input type="text" name="phone" id="phoneInput" class="form-control"
-                                    value="{{ $student->phone }}" required placeholder="08xxxxxxxxxx"
-                                    inputmode="numeric" pattern="[0-9]*">
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-bold small">Alamat Domisili</label>
-                                <textarea name="address" class="form-control" rows="2" required
-                                    placeholder="Alamat lengkap tempat tinggal sekarang...">{{ $student->address }}</textarea>
-                            </div>
-
-                            <hr class="my-4">
-                            <h6 class="fw-bold text-danger mb-3"><i class="bi bi-key me-1"></i> Ganti Password Baru
-                            </h6>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-bold small">Password Baru</label>
-                                <div class="input-group">
-                                    <input type="password" id="passwordInput" name="password" class="form-control"
-                                        required minlength="6">
-
-                                    <button type="button" class="btn btn-outline-secondary toggle-password"
-                                        data-target="passwordInput">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
-                                </div>
-
-                                <div id="passwordError" class="form-text text-danger small d-none">
-                                    Password tidak boleh hanya angka dan minimal 6 karakter.
-                                </div>
-                            </div>
-
-                            <div class="mb-4">
-                                <label class="form-label fw-bold small">Konfirmasi Password Baru</label>
-                                <div class="input-group">
-                                    <input type="password" id="confirmPasswordInput" name="password_confirmation"
-                                        class="form-control" required minlength="6">
-
-                                    <button type="button" class="btn btn-outline-secondary toggle-password"
-                                        data-target="confirmPasswordInput">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
-                                </div>
-
-                                <div id="confirmError" class="form-text text-danger small d-none">
-                                    Konfirmasi password tidak sama.
-                                </div>
-                            </div>
-
-
-                            <button type="submit" id="submitBtn" class="btn btn-danger w-100 py-2 fw-bold">
-                                Simpan & Login Ulang
-                            </button>
-                        </form>
-                    </div>
-                </div>
+        <div class="text-center mb-8">
+            <div
+                class="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
+                <i class="fa-solid fa-user-shield"></i>
             </div>
+            <h1 class="text-2xl font-[900] text-slate-800">Amankan Akun Anda</h1>
+            <p class="text-slate-500 text-sm mt-1">Halo {{ $student->name }}, mohon lengkapi data berikut sebelum
+                melanjutkan.</p>
         </div>
+
+        <form action="{{ route('student.profile.store') }}" method="POST" class="space-y-5">
+            @csrf
+
+            <div>
+                <label class="text-xs font-bold text-slate-400 uppercase ml-2">Email Pribadi</label>
+                <input type="email" name="email"
+                    class="w-full mt-1 px-4 py-3 rounded-xl bg-slate-100 border-none focus:ring-2 focus:ring-red-500"
+                    placeholder="nama@gmail.com" required>
+            </div>
+
+            <div>
+                <label class="text-xs font-bold text-slate-400 uppercase ml-2">No. WhatsApp</label>
+                <input type="text" name="phone" value="{{ $student->phone }}"
+                    class="w-full mt-1 px-4 py-3 rounded-xl bg-slate-100 border-none focus:ring-2 focus:ring-red-500"
+                    placeholder="08xxxxxxxxxx" required>
+            </div>
+
+            <div>
+                <label class="text-xs font-bold text-slate-400 uppercase ml-2">Alamat Domisili</label>
+                <textarea name="address" rows="2"
+                    class="w-full mt-1 px-4 py-3 rounded-xl bg-slate-100 border-none focus:ring-2 focus:ring-red-500"
+                    placeholder="Alamat lengkap..." required>{{ $student->address }}</textarea>
+            </div>
+
+            <div class="pt-4 border-t border-slate-200">
+                <label class="text-xs font-bold text-slate-400 uppercase ml-2">Buat Password Baru</label>
+                <div class="grid grid-cols-2 gap-4 mt-1">
+                    <input type="password" name="password"
+                        class="w-full px-4 py-3 rounded-xl bg-slate-100 border-none focus:ring-2 focus:ring-red-500"
+                        placeholder="Password Baru" required minlength="6">
+                    <input type="password" name="password_confirmation"
+                        class="w-full px-4 py-3 rounded-xl bg-slate-100 border-none focus:ring-2 focus:ring-red-500"
+                        placeholder="Ulangi Password" required minlength="6">
+                </div>
+                <p class="text-[10px] text-slate-400 mt-2 ml-2">* Minimal 6 karakter. Jangan gunakan password default.
+                </p>
+            </div>
+
+            <button type="submit" class="btn-clay w-full py-4 rounded-xl font-bold text-lg mt-4">
+                Simpan & Lanjutkan <i class="fa-solid fa-arrow-right ml-2"></i>
+            </button>
+        </form>
     </div>
 
     <script>
@@ -210,6 +194,7 @@
             });
         });
     </script>
+
 </body>
 
 </html>

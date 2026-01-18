@@ -38,8 +38,8 @@ class BillController extends Controller
                         : '<span class="badge bg-secondary">Tutup</span>';
                 })
                 ->addColumn('action', function ($row) {
-                    $editBtn = '<button data-url="'.route('du.bills.edit', $row->id).'" class="btn btn-sm btn-warning btn-modal text-white me-1"><i class="bi bi-pencil"></i></button>';
-                    $delBtn = '<button data-url="'.route('du.bills.destroy', $row->id).'" data-name="'.$row->title.'" class="btn btn-sm btn-danger btn-delete"><i class="bi bi-trash"></i></button>';
+                    $editBtn = '<button data-url="'.route('admin.du.bills.edit', $row->id).'" class="btn btn-sm btn-warning btn-modal text-white me-1"><i class="bi bi-pencil"></i></button>';
+                    $delBtn = '<button data-url="'.route('admin.du.bills.destroy', $row->id).'" data-name="'.$row->title.'" class="btn btn-sm btn-danger btn-delete"><i class="bi bi-trash"></i></button>';
 
                     return $editBtn.$delBtn;
                 })
