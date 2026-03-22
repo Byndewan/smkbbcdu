@@ -129,7 +129,7 @@ class StudentController extends Controller
                 'current_class_id' => $request->class_id,
                 'prev_class_id' => $request->prev_class_id,
                 'school_year_id' => $request->school_year_id,
-                'password' => Hash::make('12345678'),
+                'password' => Hash::make($request->nipd,),
                 'is_active' => $request->is_active ?? 1,
             ]);
             $student->assignRole('Siswa');

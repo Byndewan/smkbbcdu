@@ -23,8 +23,14 @@ class AuthController extends Controller
         $credentials = $request->only('email', 'password');
         if (Auth::guard('web')->attempt($credentials)) {
             $request->session()->regenerate();
+            $user = Auth::guard('web')->user();
+            if ($user->hasRole('Archivist')) {
+                return redirect()->route('admin.trash.dashboard');
+            }
+
             return redirect()->intended(route('admin.landing'));
         }
+
         if (Auth::guard('student')->attempt($credentials)) {
             $request->session()->regenerate();
             return redirect()->intended(route('student.dashboard'));

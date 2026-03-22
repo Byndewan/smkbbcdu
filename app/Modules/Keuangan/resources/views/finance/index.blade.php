@@ -108,4 +108,22 @@
             });
         });
     </script>
+    <script>
+        setTimeout(() => {
+            if (typeof window.Echo === 'undefined') return;
+            console.log("📡 Keuangan Listening (Mode Hemat Resource)...");
+            window.Echo.channel('admin-channel')
+                .listen('.payment.received', (e) => {
+                    let status = e.transaction.status;
+                    const statusKeuangan = ['payment_review', 'paid', 'payment_rejected'];
+                    if (statusKeuangan.includes(status)) {
+                        if ($.fn.DataTable.isDataTable('#datatable')) {
+                            $('#datatable').DataTable().ajax.reload(null, false);
+
+                            // Refresh badge counter di sini
+                        }
+                    }
+                });
+        }, 1000);
+    </script>
 @endpush

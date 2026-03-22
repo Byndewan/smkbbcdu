@@ -91,7 +91,7 @@ $(document).on("submit", ".form-ajax", function (e) {
                 setTimeout(() => window.location.reload(), 1000);
             }
             btnSubmit.prop("disabled", false).html(btnOriginalText);
-            refreshPendingBadge();
+            // refreshPendingBadge();
         },
         error: function (xhr) {
             btnSubmit.prop("disabled", false).html(btnOriginalText);
@@ -148,7 +148,7 @@ $(document).on("click", ".btn-delete", function (e) {
                     } else {
                         location.reload();
                     }
-                    refreshPendingBadge();
+                    // refreshPendingBadge();
                 },
                 error: function () {
                     Swal.fire(
@@ -162,23 +162,23 @@ $(document).on("click", ".btn-delete", function (e) {
     });
 });
 
-function refreshPendingBadge() {
-    let url = "/admin/daftar-ulang/transactions/count-pending";
-    $.get(url, function (response) {
-        console.log(response);
-        let badge = $("#badge-pending-transactions");
-        let count = response.count;
-        if (count > 0) {
-            badge.text(count);
-            badge.removeClass("d-none");
-        } else {
-            badge.addClass("d-none");
-        }
-    });
-}
+// function refreshPendingBadge() {
+//     let url = "/admin/daftar-ulang/transactions/count-pending";
+//     $.get(url, function (response) {
+//         console.log(response);
+//         let badge = $("#badge-pending-transactions");
+//         let count = response.count;
+//         if (count > 0) {
+//             badge.text(count);
+//             badge.removeClass("d-none");
+//         } else {
+//             badge.addClass("d-none");
+//         }
+//     });
+// }
 
 $(function () {
-    refreshPendingBadge();
+    // refreshPendingBadge();
 });
 
 document.addEventListener("change", function (e) {

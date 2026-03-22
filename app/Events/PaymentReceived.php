@@ -6,10 +6,12 @@ use App\Models\DuTransaction;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
-class PaymentReceived implements ShouldBroadcast
+class PaymentReceived implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -25,6 +27,9 @@ class PaymentReceived implements ShouldBroadcast
     public function __construct($transaction, $message, $type = 'success')
     {
         $this->transaction = DuTransaction::with('student', 'bill')->find($transaction->id);
+        Log::info('EVENT CONSTRUCTOR JALAN', [
+            'trx' => $transaction?->id
+        ]);
         $this->message = $message;
         $this->type = $type;
     }
@@ -48,6 +53,7 @@ class PaymentReceived implements ShouldBroadcast
 
     public function broadcastWith(): array
     {
+        Log::info('BROADCAST JALAN');
         return [
             'transaction' => [
                 'id' => $this->transaction->id,

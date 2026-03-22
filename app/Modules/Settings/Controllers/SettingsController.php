@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\LandingFaq;
 use App\Models\LandingFeature;
 use App\Models\LandingStep;
+use App\Services\FileService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
@@ -26,12 +27,17 @@ class SettingsController extends Controller
         return view('Settings::front.index', compact('setting', 'counts'));
     }
 
-    public function update(Request $request)
+    public function update(Request $request, FileService $fileService)
     {
         $keys = [
-            'hero_title', 'hero_heading', 'hero_sort_desc',
-            'phone', 'footer_description', 'footer_copyright',
-            'hero_button_name', 'hero_button_link',
+            'hero_title',
+            'hero_heading',
+            'hero_sort_desc',
+            'phone',
+            'footer_description',
+            'footer_copyright',
+            'hero_button_name',
+            'hero_button_link',
         ];
 
         foreach ($keys as $key) {
@@ -43,21 +49,27 @@ class SettingsController extends Controller
             }
         }
 
-        $this->handleFileUpload($request, 'logo');
-        $this->handleFileUpload($request, 'hero_image');
-        $this->handleFileUpload($request, 'favicon');
+        $this->handleFileUpload($request, 'logo', $fileService);
+        $this->handleFileUpload($request, 'hero_image', $fileService);
+        $this->handleFileUpload($request, 'favicon', $fileService);
 
         return redirect()->back()->with('success', 'Tampilan Landing Page berhasil diperbarui!');
     }
 
-    private function handleFileUpload($request, $keyName)
+    private function handleFileUpload($request, $keyName, FileService $fileService)
     {
         if ($request->hasFile($keyName)) {
-            $file = $request->file($keyName);
-            $path = $file->store('uploads/front-assets', 'public');
+            $oldSetting = DB::table('settings')->where('key', $keyName)->first();
+
+            if ($oldSetting && $oldSetting->value) {
+                $relativePath = str_replace('storage/', '', $oldSetting->value);
+                $fileService->delete($relativePath);
+            }
+
+            $path = $fileService->upload($request->file($keyName), 'uploads/front-assets');
             DB::table('settings')->updateOrInsert(
                 ['key' => $keyName],
-                ['value' => 'storage/'.$path, 'type' => 'image', 'updated_at' => now()]
+                ['value' => 'storage/' . $path, 'type' => 'image', 'updated_at' => now()]
             );
         }
     }
@@ -69,8 +81,8 @@ class SettingsController extends Controller
 
             return DataTables::of($query)
                 ->addIndexColumn()
-                ->editColumn('features_image', fn ($row) => '<img src="'.asset($row->features_image).'" width="50" class="rounded">')
-                ->addColumn('action', fn ($row) => $this->getActionButtons('feature', $row))
+                ->editColumn('features_image', fn($row) => '<img src="' . asset($row->features_image) . '" width="50" class="rounded">')
+                ->addColumn('action', fn($row) => $this->getActionButtons('feature', $row))
                 ->rawColumns(['features_image', 'action'])->make(true);
         }
 
@@ -79,8 +91,8 @@ class SettingsController extends Controller
 
             return DataTables::of($query)
                 ->addIndexColumn()
-                ->editColumn('how_icon', fn ($row) => '<i class="'.$row->how_icon.' fs-4 text-danger"></i>')
-                ->addColumn('action', fn ($row) => $this->getActionButtons('step', $row))
+                ->editColumn('how_icon', fn($row) => '<i class="' . $row->how_icon . ' fs-4 text-danger"></i>')
+                ->addColumn('action', fn($row) => $this->getActionButtons('step', $row))
                 ->rawColumns(['how_icon', 'action'])->make(true);
         }
 
@@ -89,7 +101,7 @@ class SettingsController extends Controller
 
             return DataTables::of($query)
                 ->addIndexColumn()
-                ->addColumn('action', fn ($row) => $this->getActionButtons('faq', $row))
+                ->addColumn('action', fn($row) => $this->getActionButtons('faq', $row))
                 ->rawColumns(['action'])->make(true);
         }
     }
@@ -100,30 +112,40 @@ class SettingsController extends Controller
 
         return '
             <div class="btn-group btn-group-sm gap-1">
-                <button type="button" class="btn btn-warning text-white btn-edit" data-type="'.$type.'" data-row="'.$jsonData.'"><i class="bi bi-pencil"></i></button>
-                <button type="button" class="btn btn-danger btn-delete" data-url="'.route('admin.settings.front.'.$type.'.destroy', $row->id).'"><i class="bi bi-trash"></i></button>
+                <button type="button" class="btn btn-warning text-white btn-edit" data-type="' . $type . '" data-row="' . $jsonData . '"><i class="bi bi-pencil"></i></button>
+                <button type="button" class="btn btn-danger btn-delete" data-url="' . route('admin.settings.front.' . $type . '.destroy', $row->id) . '"><i class="bi bi-trash"></i></button>
             </div>';
     }
 
-    public function saveFeature(Request $request)
+    public function saveFeature(Request $request, FileService $fileService)
     {
         $data = [
-            'features_card_heading' => $request->heading,
+            'features_card_heading'   => $request->heading,
             'features_card_sort_desc' => $request->desc,
-            'sort_order' => $request->sort_order ?? 0,
+            'sort_order'              => $request->sort_order ?? 0,
         ];
 
         if ($request->hasFile('image')) {
-            $data['features_image'] = 'storage/'.$request->file('image')->store('uploads/front-assets', 'public');
+            if ($request->id) {
+                $existingFeature = LandingFeature::find($request->id);
+                if ($existingFeature && $existingFeature->features_image) {
+                    $oldPath = str_replace('storage/', '', $existingFeature->features_image);
+                    $fileService->delete($oldPath);
+                }
+            }
+
+            $path = $fileService->upload($request->file('image'), 'uploads/front-assets');
+            $data['features_image'] = 'storage/' . $path;
         }
 
         if ($request->id) {
             LandingFeature::where('id', $request->id)->update($data);
             $msg = 'Fitur diperbarui';
         } else {
-            if (! $request->hasFile('image')) {
+            if (!$request->hasFile('image')) {
                 return back()->with('error', 'Gambar wajib diupload');
             }
+
             LandingFeature::create($data);
             $msg = 'Fitur ditambahkan';
         }

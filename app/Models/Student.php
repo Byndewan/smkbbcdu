@@ -9,10 +9,11 @@ use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class Student extends Authenticatable
 {
-    use LogsActivity, HasRoles, Notifiable;
+    use LogsActivity, HasRoles, Notifiable, HasApiTokens;
 
     protected $table = 'core_students';
     protected $guarded = ['id'];

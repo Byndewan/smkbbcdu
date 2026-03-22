@@ -54,17 +54,17 @@
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white border-bottom border-light p-0">
                     <ul class="nav nav-tabs card-header-tabs mx-2" id="landingTab" role="tablist">
-                        <li class="nav-item"><button class="nav-link active" data-type="global" data-bs-toggle="tab"
+                        <li class="nav-item"><button type="button" class="nav-link active" data-type="global" data-bs-toggle="tab"
                                 data-bs-target="#tab-general">Umum & Logo</button></li>
-                        <li class="nav-item"><button class="nav-link" data-type="global" data-bs-toggle="tab"
+                        <li class="nav-item"><button type="button" class="nav-link" data-type="global" data-bs-toggle="tab"
                                 data-bs-target="#tab-hero">Hero Section</button></li>
-                        <li class="nav-item"><button class="nav-link" data-type="list" data-bs-toggle="tab"
+                        <li class="nav-item"><button type="button" class="nav-link" data-type="list" data-bs-toggle="tab"
                                 data-bs-target="#tab-features">Fitur (3)</button></li>
-                        <li class="nav-item"><button class="nav-link" data-type="list" data-bs-toggle="tab"
+                        <li class="nav-item"><button type="button" class="nav-link" data-type="list" data-bs-toggle="tab"
                                 data-bs-target="#tab-steps">Panduan (8)</button></li>
-                        <li class="nav-item"><button class="nav-link" data-type="list" data-bs-toggle="tab"
+                        <li class="nav-item"><button type="button" class="nav-link" data-type="list" data-bs-toggle="tab"
                                 data-bs-target="#tab-faq">FAQ (5)</button></li>
-                        <li class="nav-item"><button class="nav-link" data-type="global" data-bs-toggle="tab"
+                        <li class="nav-item"><button type="button" class="nav-link" data-type="global" data-bs-toggle="tab"
                                 data-bs-target="#tab-footer">Footer</button></li>
                     </ul>
                 </div>
@@ -178,7 +178,7 @@
                                                 <div class="mb-2">
                                                     <label class="small fw-bold text-muted">Judul</label>
                                                     <input type="text" name="heading" id="feature_heading"
-                                                        class="form-control form-control-sm border-0" required>
+                                                        class="form-control form-control-sm border-0">
                                                 </div>
                                                 <div class="mb-2">
                                                     <label class="small fw-bold text-muted">Gambar/Icon</label>
@@ -189,7 +189,7 @@
                                                 </div>
                                                 <div class="mb-2">
                                                     <label class="small fw-bold text-muted">Deskripsi</label>
-                                                    <textarea name="desc" id="feature_desc" class="form-control form-control-sm border-0" rows="3" required></textarea>
+                                                    <textarea name="desc" id="feature_desc" class="form-control form-control-sm border-0" rows="3"></textarea>
                                                 </div>
                                                 <div class="mb-3">
                                                     <label class="small fw-bold text-muted">Urutan</label>
@@ -245,16 +245,16 @@
                                                         (FontAwesome)</label>
                                                     <input type="text" name="icon" id="step_icon"
                                                         class="form-control form-control-sm border-0 font-monospace"
-                                                        placeholder="fa-solid fa-user" required>
+                                                        placeholder="fa-solid fa-user">
                                                 </div>
                                                 <div class="mb-2">
                                                     <label class="small fw-bold text-muted">Judul</label>
                                                     <input type="text" name="heading" id="step_heading"
-                                                        class="form-control form-control-sm border-0" required>
+                                                        class="form-control form-control-sm border-0">
                                                 </div>
                                                 <div class="mb-2">
                                                     <label class="small fw-bold text-muted">Deskripsi</label>
-                                                    <textarea name="desc" id="step_desc" class="form-control form-control-sm border-0" rows="2" required></textarea>
+                                                    <textarea name="desc" id="step_desc" class="form-control form-control-sm border-0" rows="2"></textarea>
                                                 </div>
                                                 <div class="mb-3">
                                                     <label class="small fw-bold text-muted">Urutan</label>
@@ -306,11 +306,11 @@
                                                 <input type="hidden" name="id" id="faq_id">
                                                 <div class="mb-2">
                                                     <label class="small fw-bold text-muted">Pertanyaan</label>
-                                                    <textarea name="question" id="faq_question" class="form-control form-control-sm border-0" rows="2" required></textarea>
+                                                    <textarea name="question" id="faq_question" class="form-control form-control-sm border-0" rows="2"></textarea>
                                                 </div>
                                                 <div class="mb-2">
                                                     <label class="small fw-bold text-muted">Jawaban</label>
-                                                    <textarea name="answer" id="faq_answer" class="form-control form-control-sm border-0" rows="3" required></textarea>
+                                                    <textarea name="answer" id="faq_answer" class="form-control form-control-sm border-0" rows="3"></textarea>
                                                 </div>
                                                 <div class="row g-2 mb-2">
                                                     <div class="col-6">

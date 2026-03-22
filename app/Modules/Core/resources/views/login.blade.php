@@ -1,104 +1,151 @@
 <!DOCTYPE html>
-<html lang="id" data-bs-theme="light">
+<html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - BBC Pay</title>
-    @vite(['resources/css/admin.scss'])
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <title>Login Access • BBC Pay</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Inter"', 'sans-serif'],
+                        display: ['"Syne"', 'sans-serif'],
+                    },
+                    colors: {
+                        bbc: {
+                            black: '#0a0a0a',
+                            white: '#ffffff',
+                            accent: 'oklab(55.91% 0.20543 0.09128)',
+                            gray: '#f4f4f5'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
         body {
-            background-color: var(--bbc-bg-light);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
+            background-color: #ffffff;
+            color: #0a0a0a;
+            overflow-x: hidden;
         }
-        .login-card {
-            border: none;
-            border-radius: 24px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-            background: var(--bs-card-bg);
-            overflow: hidden;
-            width: 100%;
-            max-width: 420px;
-            padding: 2.5rem;
+
+        .bg-noise {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
         }
-        .form-control {
-            padding: 0.8rem 1rem;
-            border-radius: 12px;
-            background-color: var(--bbc-bg-light);
-            border: 1px solid transparent;
+
+        .input-brutal {
+            transition: all 0.3s ease;
         }
-        .form-control:focus {
-            background-color: var(--bs-body-bg);
-            border-color: var(--bbc-primary);
-            box-shadow: 0 0 0 4px rgba(var(--bbc-primary), 0.1);
-        }
-        .btn-primary {
-            padding: 0.8rem;
-            border-radius: 12px;
-            font-size: 1rem;
+        .input-brutal:focus {
+            box-shadow: 4px 4px 0px 0px #0a0a0a;
+            transform: translate(-2px, -2px);
         }
     </style>
 </head>
-<body>
 
-    <div class="login-card animate__animated animate__fadeInUp">
-        <div class="text-center mb-4">
-            <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3" style="width: 60px; height: 60px;">
-                <i class="bi bi-wallet2 fs-2"></i>
+<body class="flex items-center justify-center min-h-screen relative p-6">
+
+    <div class="bg-noise"></div>
+    <div class="fixed top-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-red-500/5 rounded-full blur-[80px] pointer-events-none z-0"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] bg-red-500/5 rounded-full blur-[80px] pointer-events-none z-0"></div>
+
+    <div class="w-full max-w-md bg-white border border-black/10 rounded-3xl shadow-xl shadow-black/5 relative z-10 overflow-hidden">
+
+        <div class="px-8 pt-10 pb-6 text-center">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-bbc-black text-white mb-6 shadow-lg">
+                <i class="fa-solid fa-lock text-xl"></i>
             </div>
-            <h3 class="fw-bold mb-1">Selamat Datang</h3>
-            <p class="text-muted small">Silakan login untuk melanjutkan</p>
+            <h1 class="font-display font-bold text-3xl mb-2 tracking-tight">Welcome</h1>
+            <p class="text-black/50 text-sm">Masukan Email dan Kata Sansi anda di Kolom yang tersedia.</p>
         </div>
 
         @if ($errors->any())
-            <div class="alert alert-danger border-0 bg-danger bg-opacity-10 text-danger d-flex align-items-center mb-4 rounded-3 p-3">
-                <i class="bi bi-exclamation-circle-fill me-2 fs-5"></i>
-                <div class="small fw-bold">{{ $errors->first() }}</div>
+            <div class="mx-8 mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm rounded-r-lg flex items-start gap-3">
+                <i class="fa-solid fa-circle-exclamation mt-0.5"></i>
+                <div>
+                    <span class="font-bold block mb-1">Access Denied</span>
+                    {{ $errors->first() }}
+                </div>
             </div>
         @endif
 
-        <form action="{{ route('login.post') }}" method="POST">
+        <form action="{{ route('login.post') }}" method="POST" class="px-8 pb-10">
             @csrf
 
-            <div class="mb-3">
-                <label class="form-label small fw-bold text-muted text-uppercase">Email</label>
-                <div class="input-group">
-                    <span class="input-group-text border-0 bg-light rounded-start-3 ps-3"><i class="bi bi-envelope text-muted"></i></span>
-                    <input type="text" name="email" class="form-control" placeholder="Isi email anda . . ." required autofocus>
+            <div class="mb-5">
+                <label class="block text-xs font-bold uppercase tracking-widest text-black/40 mb-2">Email</label>
+                <div class="relative">
+                    <div class="absolute z-[100] inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-black/30">
+                        <i class="fa-regular fa-envelope"></i>
+                    </div>
+                    <input type="text" name="email"
+                           class="input-brutal w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-black/5 rounded-xl text-sm font-medium focus:outline-none focus:bg-white focus:border-black placeholder-black/30 text-black"
+                           placeholder="Masukan Email Anda. . ." required autofocus>
                 </div>
             </div>
 
-            <div class="mb-4">
-                <label class="form-label small fw-bold text-muted text-uppercase">Password</label>
-                <div class="input-group">
-                    <span class="input-group-text border-0 bg-light rounded-start-3 ps-3"><i class="bi bi-key text-muted"></i></span>
-                    <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+            <div class="mb-8">
+                <label class="block text-xs font-bold uppercase tracking-widest text-black/40 mb-2">Kata Sandi</label>
+                <div class="relative">
+                    <div class="absolute z-[100] inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-black/30">
+                        <i class="fa-solid fa-key"></i>
+                    </div>
+                    <input type="password" name="password" id="passwordInput"
+                           class="input-brutal w-full pl-11 pr-12 py-3.5 bg-gray-50 border border-black/5 rounded-xl text-sm font-medium focus:outline-none focus:bg-white focus:border-black placeholder-black/30 text-black"
+                           placeholder="••••••••" required>
+                    <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 pr-4 flex items-center text-black/30 hover:text-black transition-colors cursor-pointer">
+                        <i class="fa-regular fa-eye" id="eyeIcon"></i>
+                    </button>
                 </div>
             </div>
 
-            {{-- <div class="mb-4 d-flex justify-content-between align-items-center">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="remember" id="remember">
-                    <label class="form-check-label small text-muted" for="remember">Ingat Saya</label>
-                </div>
-                <a href="#" class="small text-decoration-none fw-bold text-primary">Lupa Password?</a>
-            </div> --}}
-
-            <div class="d-grid">
-                <button type="submit" class="btn btn-primary fw-bold">
-                    MASUK SEKARANG <i class="bi bi-arrow-right ms-2"></i>
-                </button>
-            </div>
+            <button type="submit" class="group w-full py-4 bg-bbc-black text-white rounded-xl font-display font-bold text-lg tracking-wide hover:bg-bbc-accent transition-all duration-300 relative overflow-hidden">
+                <span class="relative z-10 flex items-center justify-center gap-2">
+                    LOGIN <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                </span>
+            </button>
         </form>
 
-        <div class="text-center mt-4">
-            <p class="text-muted small mb-0">Belum Baca Panduan?</p>
-            <a href="{{ route('landing') }}#howItWorksSection" class="text-decoration-none fw-bold small">Klik Disini</a>
+        <div class="px-8 py-4 bg-gray-50 border-t border-black/5 text-center">
+            <p class="text-xs text-black/40">
+                Mengalami Masalah?
+                <a href="{{ route('landing') }}#guide" class="text-bbc-black font-bold hover:underline">Baca Panduaun</a>
+            </p>
         </div>
     </div>
 
+    <script>
+        function togglePassword() {
+            const input = document.getElementById('passwordInput');
+            const icon = document.getElementById('eyeIcon');
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = "password";
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    </script>
 </body>
 </html>

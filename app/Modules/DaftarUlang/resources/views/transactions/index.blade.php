@@ -115,4 +115,20 @@
             });
         });
     </script>
+    <script>
+        setTimeout(() => {
+            if (typeof window.Echo === 'undefined') {
+                console.error("reload manual diperlukan.");
+                return;
+            }
+            window.Echo.channel('admin-channel')
+                .listen('.payment.received', (e) => {
+                    if ($.fn.DataTable.isDataTable('#datatable')) {
+                        $('#datatable').DataTable().ajax.reload(null, false);
+
+                        // Nanti Tambahin: Update badge angka di tab filter
+                    }
+                });
+        }, 1000);
+    </script>
 @endpush

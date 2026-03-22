@@ -3,6 +3,7 @@
 namespace App\Modules\Siswa\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Services\FileService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -22,7 +23,7 @@ class ProfileController extends Controller
         $student = Auth::guard('student')->user();
 
         $request->validate([
-            'email' => 'required|email|unique:core_students,email,'.$student->id,
+            'email' => 'required|email|unique:core_students,email,' . $student->id,
             'phone' => 'required|numeric',
         ]);
 
@@ -55,7 +56,7 @@ class ProfileController extends Controller
         return back()->with('success', 'Password berhasil diubah.');
     }
 
-    public function updatePhoto(Request $request)
+    public function updatePhoto(Request $request, FileService $fileService)
     {
         $request->validate([
             'photo' => 'required|image|mimes:jpg,jpeg,png|max:2048',
@@ -64,10 +65,14 @@ class ProfileController extends Controller
         $student = Auth::guard('student')->user();
 
         if ($request->hasFile('photo')) {
-            if ($student->photo_path && Storage::disk('public')->exists($student->photo_path)) {
-                Storage::disk('public')->delete($student->photo_path);
+            if ($student->photo_path) {
+                $fileService->delete($student->photo_path);
             }
-            $path = $request->file('photo')->store('uploads/students/photos', 'public');
+            $path = $fileService->uploadStudentFile(
+                $request->file('photo'),
+                $student,
+                'profile'
+            );
             $student->update(['photo_path' => $path]);
         }
 

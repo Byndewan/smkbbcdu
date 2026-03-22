@@ -2,6 +2,8 @@
 
 namespace App\Modules\DaftarUlang\Controllers;
 
+use App\Events\PaymentReceived;
+use App\Events\TransactionUpdated;
 use App\Http\Controllers\Controller;
 use App\Mail\TransactionRejected;
 use App\Models\DuTransaction;
@@ -97,13 +99,6 @@ class TransactionController extends Controller
                 } else {
                     $newStatus = 'doc_rejected';
                     $note = $request->admin_note ?? 'Dokumen tidak lengkap. Mohon periksa kembali.';
-                    try {
-                        Mail::to($transaction->student->email)->send(
-                            new TransactionRejected($transaction, 'document', $note)
-                        );
-                    } catch (\Exception $e) {
-                        Log::error("Gagal kirim email dokumen: " . $e->getMessage());
-                    }
                 }
             }
             if ($request->has('payment_status')) {
@@ -113,13 +108,6 @@ class TransactionController extends Controller
                 } else {
                     $newStatus = 'payment_rejected';
                     $note = $request->admin_note ?? 'Bukti pembayaran tidak valid.';
-                    try {
-                        Mail::to($transaction->student->email)->send(
-                            new TransactionRejected($transaction, 'payment', $note)
-                        );
-                    } catch (\Exception $e) {
-                        Log::error("Gagal kirim email payment: " . $e->getMessage());
-                    }
                 }
             }
             $transaction->update([
@@ -127,6 +115,11 @@ class TransactionController extends Controller
                 'admin_note' => $note,
             ]);
             DB::commit();
+
+            $msg = "Update Transaksi #{$transaction->trx_code}: Status berubah menjadi {$newStatus}";
+            PaymentReceived::dispatch($transaction, $msg, 'info');
+            TransactionUpdated::dispatch($transaction, "Status transaksi Anda diperbarui.", $newStatus);
+
             return response()->json([
                 'status' => true,
                 'message' => ($newStatus == 'payment_review') ? 'Verifikasi Berhasil! Lanjut ke Keuangan.' : 'Verifikasi Berhasil! Dikembalikan ke Siswa.',

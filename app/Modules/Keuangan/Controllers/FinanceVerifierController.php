@@ -2,6 +2,8 @@
 
 namespace App\Modules\Keuangan\Controllers;
 
+use App\Events\PaymentReceived;
+use App\Events\TransactionUpdated;
 use App\Http\Controllers\Controller;
 use App\Mail\PaymentSuccessMail;
 use App\Models\DuTransaction;
@@ -80,22 +82,21 @@ class FinanceVerifierController extends Controller
             if ($request->payment_status == 'valid') {
                 $finalStatus = 'paid';
                 $finalNote = 'Pembayaran Diterima.';
+                $transaction->update([
+                    'status' => $finalStatus,
+                    'admin_note' => $finalNote,
+                ]);
+                DB::commit();
+                TransactionUpdated::dispatch($transaction,"Pembayaran Anda telah diverifikasi.", $finalStatus);
             } else {
                 $finalStatus = 'payment_rejected';
                 $finalNote = $request->admin_note ?? 'Bukti pembayaran tidak valid / dana tidak masuk.';
-            }
-
-            $transaction->update([
-                'status' => $finalStatus,
-                'admin_note' => $finalNote,
-            ]);
-            DB::commit();
-            if ($finalStatus == 'paid' && $transaction->student->email) {
-                try {
-                    Mail::to($transaction->student->email)->send(new PaymentSuccessMail($transaction));
-                } catch (\Exception $e) {
-                    Log::error("Gagal kirim email pembayaran ID $id: ".$e->getMessage());
-                }
+                $transaction->update([
+                    'status' => $finalStatus,
+                    'admin_note' => $finalNote,
+                ]);
+                DB::commit();
+                TransactionUpdated::dispatch($transaction,"Pembayaran Anda ditolak, tolong perbaiki.", $finalStatus);
             }
 
             return response()->json([

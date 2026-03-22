@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Front\FrontController;
-
+use App\Modules\Admin\Controllers\TrashController;
 // Core Modules
 use App\Modules\Core\Controllers\AuthController;
 use App\Modules\Core\Controllers\UserController;
@@ -26,6 +26,7 @@ use App\Modules\DaftarUlang\Controllers\TransactionController;
 use App\Modules\Keuangan\Controllers\FinanceVerifierController;
 use App\Modules\Keuangan\Controllers\ReportController;
 use App\Modules\Settings\Controllers\SettingsController;
+use Illuminate\Support\Facades\Storage;
 
 /*
 |--------------------------------------------------------------------------
@@ -59,7 +60,7 @@ Route::middleware(['auth:student', 'role:Siswa'])->prefix('siswa')->name('studen
         Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
 
         // Profile Management
-        Route::prefix('profil')->name('profile.')->group(function() {
+        Route::prefix('profil')->name('profile.')->group(function () {
             Route::get('/', [StudentProfileController::class, 'index'])->name('index');
             Route::put('/update', [StudentProfileController::class, 'update'])->name('update');
             Route::put('/password', [StudentProfileController::class, 'updatePassword'])->name('password');
@@ -67,7 +68,7 @@ Route::middleware(['auth:student', 'role:Siswa'])->prefix('siswa')->name('studen
         });
 
         // Tagihan & Pembayaran
-        Route::prefix('tagihan')->name('bills.')->group(function() {
+        Route::prefix('tagihan')->name('bills.')->group(function () {
             Route::get('/{id}', [StudentDashboardController::class, 'show'])->name('show');
             Route::get('/{id}/bayar', [StudentDashboardController::class, 'payment'])->name('payment');
             Route::post('/{id}/bayar', [StudentDashboardController::class, 'processPayment'])->name('payment.process');
@@ -90,7 +91,9 @@ Route::middleware(['auth:web', 'role:SuperAdmin|Petugas|Bendahara'])->prefix('ad
     Route::redirect('/', '/admin/dashboard');
 
     // --- Landing Admin ---
-    Route::get('/landing', function () {return view('admin.landing');})->name('landing');
+    Route::get('/landing', function () {
+        return view('admin.landing');
+    })->name('landing');
 
     // --- A. MODULE MASTER DATA ---
     Route::prefix('core')->name('core.')->group(function () {
@@ -150,7 +153,28 @@ Route::middleware(['auth:web', 'role:SuperAdmin|Petugas|Bendahara'])->prefix('ad
 
 /*
 |--------------------------------------------------------------------------
-| 4. WEBHOOKS & TESTING (No Auth / Specific Logic)
+| 4. GROUP KHUSUS ROLE 'Archivist' (Guard: web)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:Archivist'])->prefix('archivist')->group(function () {
+    // GROUP TRASH MANAGER
+    Route::name('admin.trash.')->group(function () {
+        Route::get('/', [TrashController::class, 'index'])->name('dashboard');
+        Route::get('/students', [TrashController::class, 'students'])->name('students');
+        Route::post('/students/{id}/restore', [TrashController::class, 'restoreStudent'])->name('students.restore');
+        Route::delete('/students/{id}/kill', [TrashController::class, 'killStudent'])->name('students.kill');
+    });
+    // GROUP FILE MANAGER
+    Route::middleware(['auth', 'role:Archivist'])
+        ->prefix('filemanager')
+        ->group(function () {
+            \UniSharp\LaravelFilemanager\Lfm::routes();
+        });
+});
+
+/*
+|--------------------------------------------------------------------------
+| 5. WEBHOOKS & TESTING (No Auth / Specific Logic)
 |--------------------------------------------------------------------------
 */
 
@@ -161,11 +185,22 @@ Route::get('/test-email', function () {
     return "Email sent!";
 });
 
-Route::get('/test-reverb', function () {
+Route::get('/test-reverb-old', function () {
     $trx = \App\Models\DuTransaction::first();
     if (!$trx) return "Buat dummy transaksi dulu.";
     \App\Events\PaymentReceived::dispatch($trx, "TES ROUTE BARU!", 'success');
     return "Sinyal Reverb dikirim!";
+});
+
+Route::get('/test-reverb', function () {
+    $trx = \App\Models\DuTransaction::has('student')->first();
+    if (!$trx) {
+        return "Gak nemu transaksi yang ada siswanya. Buat dummy dulu yang bener Captain!";
+    }
+    // dd($trx->student->name);
+    event(new \App\Events\PaymentReceived($trx, "TES ROUTE BARU!", 'success'));
+
+    return "Sinyal Reverb dikirim untuk Siswa: " . $trx->student->name;
 });
 
 Route::get('/force-logout', function () {
@@ -173,4 +208,44 @@ Route::get('/force-logout', function () {
     \Illuminate\Support\Facades\Auth::guard('student')->logout();
     session()->flush();
     return redirect('/login');
+});
+
+Route::get('/debug-lfm-path', function () {
+    $disk = Storage::disk('public');
+
+    return [
+        'disk_root' => $disk->path(''),
+        'uploads_exists' => $disk->exists('uploads'),
+        'uploads_files' => $disk->files('uploads'),
+        'uploads_dirs' => $disk->directories('uploads'),
+    ];
+});
+
+
+Route::get('/debug-files', function () {
+    $disk = 'public';
+    $path = 'uploads';
+    $root = config("filesystems.disks.$disk.root");
+    $exists = Illuminate\Support\Facades\Storage::disk($disk)->exists($path);
+    $files = $exists ? Illuminate\Support\Facades\Storage::disk($disk)->allFiles($path) : [];
+    $directories = $exists ? Illuminate\Support\Facades\Storage::disk($disk)->allDirectories($path) : [];
+
+    return [
+        '1_disk_config' => $disk,
+        '2_physical_path' => $root,
+        '3_folder_target' => $path,
+        '4_folder_found' => $exists ? 'YES' : 'NO (Folder uploads tidak ditemukan di path fisik)',
+        '5_directories_inside' => $directories,
+        '6_files_inside' => $files,
+    ];
+});
+
+
+Route::get('/test-broadcast', function () {
+    App\Events\PaymentReceived::dispatch(
+        App\Models\DuTransaction::first(),
+        'TEST ROUTE',
+        'success'
+    );
+    return 'OK';
 });
